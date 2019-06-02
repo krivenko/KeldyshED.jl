@@ -4,4 +4,5 @@ authors = ["Igor Krivenko <igor.s.krivenko@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Keldysh = "50f2bc7e-5fd7-11e9-13c7-85fb88b4f34f"
