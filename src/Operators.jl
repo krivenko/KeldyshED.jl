@@ -66,10 +66,9 @@ end
 """An ordered product of canonical operators"""
 struct Monomial
   ops::Vector{CanonicalOperator}
-
-  Monomial() = new(CanonicalOperator[])
-  Monomial(v::Vector{CanonicalOperator}) = new(v)
 end
+
+Monomial() = Monomial(CanonicalOperator[])
 
 Base.:(==)(m1::Monomial, m2::Monomial) = m1.ops == m2.ops
 
@@ -105,15 +104,13 @@ const const_monomial = Monomial()
 mutable struct OperatorExpr{ScalarType <: Number}
   # Monomial -> coefficient in front of it
   monomials::SortedDict{Monomial, ScalarType}
+end
 
-  # Construct empty expression
-  OperatorExpr{S}() where S = new(SortedDict{Monomial, S}())
-  # Construct constant expression
-  function OperatorExpr{S}(x::S) where S
-    new(SortedDict{Monomial, S}(Monomial() => x))
-  end
-  # Construct from a list of monomials
-  OperatorExpr{S}(mm::SortedDict{Monomial, S}) where S = new(mm)
+# Construct empty expression
+OperatorExpr{S}() where S = OperatorExpr{S}(SortedDict{Monomial, S}())
+# Construct constant expression
+function OperatorExpr{S}(x::S) where {S <: Number}
+  OperatorExpr{S}(SortedDict{Monomial, S}(Monomial() => x))
 end
 
 const RealOperatorExpr = OperatorExpr{Float64}
