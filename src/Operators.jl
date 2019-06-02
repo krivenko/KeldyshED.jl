@@ -101,7 +101,7 @@ const const_monomial = Monomial()
 ################
 
 """Polynomial built out of canonical operators"""
-mutable struct OperatorExpr{ScalarType <: Number}
+struct OperatorExpr{ScalarType <: Number}
   # Monomial -> coefficient in front of it
   monomials::SortedDict{Monomial, ScalarType}
 end
