@@ -2,6 +2,7 @@ module Operators
 
 using DataStructures
 
+export IndicesType
 export OperatorExpr, RealOperatorExpr, ComplexOperatorExpr, scalartype
 export c, c_dag, n, dagger
 
@@ -223,7 +224,7 @@ end
 function normalize_and_insert(m::Monomial,
                               coeff::S,
                               target::SortedDict{Monomial,S}) where S
-  # The normalization is done by employing a simple bubble sort algorithms.
+  # The normalization is done by employing a simple bubble sort algorithm.
   # Apart from sorting elements this function keeps track of the sign and
   # recursively calls itself if a permutation of two operators produces a new
   # monomial
