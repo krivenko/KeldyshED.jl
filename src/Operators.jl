@@ -128,7 +128,7 @@ scalartype(::Type{OperatorExpr{S}}) where S = S
 # Is zero operator?
 Base.iszero(op::OperatorExpr{S}) where S = isempty(op.monomials)
 
-function Base.isequal(op1::OperatorExpr{S}, op2::OperatorExpr{S}) where S
+function Base.:(==)(op1::OperatorExpr{S}, op2::OperatorExpr{S}) where S
   iszero(op1 - op2)
 end
 
@@ -143,14 +143,16 @@ end
 
 # Add constant
 function Base.:+(op::OperatorExpr{S}, alpha::Number) where S
-  iszero(alpha) && return op
+  isapprox(alpha, 0, atol = 100*eps(real(S))) && return op
   res = deepcopy(op)
   tok = findkey(res.monomials, const_monomial)
   if tok == pastendsemitoken(res.monomials)
     insert!(res.monomials, const_monomial, alpha)
   else
     res.monomials[tok] += alpha
-    if iszero(res.monomials[tok]) delete!((res.monomials, tok)) end
+    if isapprox(res.monomials[tok], 0, atol = 100*eps(real(S)))
+      delete!((res.monomials, tok))
+    end
   end
   res
 end
@@ -162,7 +164,7 @@ Base.:-(alpha::Number, op::OperatorExpr{S}) where S = -op + alpha
 
 # Multiply by constant
 function Base.:*(op::OperatorExpr{S}, alpha::Number) where S
-  if iszero(alpha)
+  if isapprox(alpha, 0, atol = 100*eps(real(S)))
     OperatorExpr{S}()
   else
     OperatorExpr{S}(SortedDict{Monomial, S}(m => alpha for (m,c) in op.monomials))
@@ -186,7 +188,9 @@ function Base.:+(op1::OperatorExpr{S}, op2::OperatorExpr{S}) where S
       insert!(res.monomials, m, c)
     else
       res.monomials[res_tok] += c
-      if iszero(res.monomials[res_tok]) delete!((res.monomials, res_tok)) end
+      if isapprox(res.monomials[res_tok], 0, atol = 100*eps(real(S)))
+        delete!((res.monomials, res_tok))
+      end
     end
   end
   res
@@ -201,7 +205,9 @@ function Base.:-(op1::OperatorExpr{S}, op2::OperatorExpr{S}) where S
       insert!(res.monomials, m, -c)
     else
       res.monomials[res_tok] -= c
-      if iszero(res.monomials[res_tok]) delete!((res.monomials, res_tok)) end
+      if isapprox(res.monomials[res_tok], 0, atol = 100*eps(real(S)))
+        delete!((res.monomials, res_tok))
+      end
     end
   end
   res
@@ -256,7 +262,9 @@ function normalize_and_insert(m::Monomial,
     insert!(target, m, coeff)
   else
     target[tok] += coeff
-    if iszero(target[tok]) delete!((target, tok)) end
+    if isapprox(target[tok], 0, atol = 100*eps(real(S)))
+      delete!((target, tok))
+    end
   end
 end
 
@@ -277,11 +285,6 @@ Base.eltype(op::OperatorExpr{S}) where S = Pair{Monomial, S}
 Base.length(op::OperatorExpr{S}) where S = length(op.monomials)
 Base.isempty(op::OperatorExpr{S}) where S = length(op) == 0
 
-function Base.size(op::OperatorExpr{S}, dim = 1) where S
-  @assert dim == 1
-  length(op)
-end
-
 Base.iterate(op::OperatorExpr{S}) where S = iterate(op.monomials)
 Base.iterate(op::OperatorExpr{S}, it) where S = iterate(op.monomials, it)
 
@@ -292,7 +295,9 @@ function Base.map(f, op::OperatorExpr{S}) where S
   res = OperatorExpr{S}()
   for (m, c) in op
     new_c = f(m, c)
-    if !iszero(new_c) push!(res.monomials, m => new_c) end
+    if !isapprox(new_c, 0, atol = 100*eps(real(S)))
+      push!(res.monomials, m => new_c)
+    end
   end
   res
 end
