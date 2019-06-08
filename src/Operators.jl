@@ -156,11 +156,11 @@ function Base.:+(op::OperatorExpr{S}, alpha::Number) where S
   end
   res
 end
-Base.:+(alpha::Number, op::OperatorExpr{S}) where S = op + alpha
+Base.:+(alpha::Number, op::OperatorExpr) = op + alpha
 
 # Subtract constant
-Base.:-(op::OperatorExpr{S}, alpha::Number) where S = op + (-alpha)
-Base.:-(alpha::Number, op::OperatorExpr{S}) where S = -op + alpha
+Base.:-(op::OperatorExpr, alpha::Number) = op + (-alpha)
+Base.:-(alpha::Number, op::OperatorExpr) = -op + alpha
 
 # Multiply by constant
 function Base.:*(op::OperatorExpr{S}, alpha::Number) where S
@@ -173,7 +173,7 @@ end
 Base.:*(alpha::Number, op::OperatorExpr{S}) where S = op * alpha
 
 # Divide by constant
-Base.:/(op::OperatorExpr{S}, alpha::Number) where S = op * (one(alpha) / alpha)
+Base.:/(op::OperatorExpr, alpha::Number) = op * (one(alpha) / alpha)
 
 ######################################
 # OperatorExpr: Algebraic operations #
@@ -282,11 +282,11 @@ end
 #####################################
 Base.eltype(op::OperatorExpr{S}) where S = Pair{Monomial, S}
 
-Base.length(op::OperatorExpr{S}) where S = length(op.monomials)
-Base.isempty(op::OperatorExpr{S}) where S = length(op) == 0
+Base.length(op::OperatorExpr) = length(op.monomials)
+Base.isempty(op::OperatorExpr) = length(op) == 0
 
-Base.iterate(op::OperatorExpr{S}) where S = iterate(op.monomials)
-Base.iterate(op::OperatorExpr{S}, it) where S = iterate(op.monomials, it)
+Base.iterate(op::OperatorExpr) = iterate(op.monomials)
+Base.iterate(op::OperatorExpr, it) = iterate(op.monomials, it)
 
 #############################################
 # OperatorExpr: map() and related functions #
@@ -302,8 +302,8 @@ function Base.map(f, op::OperatorExpr{S}) where S
   res
 end
 
-Base.real(op::OperatorExpr{S}) where S = map((m, c) -> real(c), op)
-Base.imag(op::OperatorExpr{S}) where S = map((m, c) -> imag(c), op)
+Base.real(op::OperatorExpr) = map((m, c) -> real(c), op)
+Base.imag(op::OperatorExpr) = map((m, c) -> imag(c), op)
 
 #######################################
 # OperatorExpr: String representation #
