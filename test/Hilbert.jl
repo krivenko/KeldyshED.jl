@@ -107,23 +107,6 @@ insert!(hss2, fhs2[8]) # 111
 @test values(hss2) == map(FockState, [0b100, 0b101, 0b110, 0b111])
 @test collect(pairs(hss2)) == [i => FockState(i+3) for i=1:4]
 
-# TODO:
-#=
-std::vector<int> Cdagmap(2, -1);
-Cdagmap[hss1.get_index()] = hss2.get_index();
-std::vector<sub_hilbert_space> sub1{hss1, hss2};
-auto opCdag = imperative_operator<sub_hilbert_space, double, true>(Cdag, fop1, Cdagmap, &sub1);
-
-state<sub_hilbert_space, double, false> start(hss0);
-start(0) = 1.0;
-start(1) = 2.0;
-start(2) = 3.0;
-start(3) = 4.0;
-
-check_state(start, {{0, 1.0}, {1, 2.0}, {2, 3.0}, {3, 4.0}});
-check_state(opCdag(start), {{4, 1.0}, {5, -2.0}, {6, -3.0}, {7, 4.0}});
-=#
-
 end
 
 @testset "State" begin
@@ -202,6 +185,51 @@ for st in [StateVector{FullHilbertSpace, Float64}(fhs),
   insert!(hss, fhs[8])
   proj_st = project(st, hss)
   check_state(proj_st, Dict(fhs[5] => 0.3, fhs[7] => 0.4))
+end
+end
+
+@testset "Operator" begin
+
+soi = SetOfIndices([IndicesType(["up", i]) for i=1:5])
+fhs = FullHilbertSpace(soi)
+
+X = 3*c_dag("up",2)*c("up",2) + 2*c_dag("up",3)*c("up",3) + c("up",2)*c("up",3)
+@test repr(X) == "3.0*c†(\"up\",2)c(\"up\",2) + " *
+                 "2.0*c†(\"up\",3)c(\"up\",3) + -1.0*c(\"up\",3)c(\"up\",2)"
+
+opX = Operator{FullHilbertSpace, Float64}(X, soi)
+
+for st in [StateVector{FullHilbertSpace, Float64}(fhs),
+           StateDict{FullHilbertSpace, Float64}(fhs)]
+  st[8] = 1.0
+  check_state(st, Dict(fhs[8] => 1.0))
+
+  new_state = opX(st)
+
+  check_state(new_state, Dict(fhs[2] => -1.0, fhs[8] => 5.0))
+end
+
+end
+
+@testset "QuarticOperator" begin
+  soi = SetOfIndices()
+  insert!(soi, "up", 1)
+  insert!(soi, "down", 1)
+  insert!(soi, "up", 2)
+  insert!(soi, "down", 2)
+
+  fhs = FullHilbertSpace(soi)
+  @test length(fhs) == 16
+
+  X = -1.0 * c_dag("up", 1) * c_dag("down", 2) * c("up", 2) * c("down", 1)
+  @test repr(X) == "1.0*c†(\"down\",2)c†(\"up\",1)c(\"up\",2)c(\"down\",1)"
+
+for st in [StateVector{FullHilbertSpace, Float64}(fhs),
+           StateDict{FullHilbertSpace, Float64}(fhs)]
+  st[10] = 1.0                                                        # 0110
+  check_state(st, Dict(fhs[10] => 1.0))                               # old state
+  check_state(Operator{FullHilbertSpace, Float64}(X, soi)(st),
+              Dict(fhs[7] => 1.0))                                    # new state
 end
 
 end

@@ -7,6 +7,7 @@ using KeldyshED.Operators
 export SetOfIndices, reversemap
 export FockState, HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
 export StateVector, StateDict, State, dot, project
+export Operator
 
 ################
 # SetOfIndices #
@@ -215,7 +216,6 @@ function StateVector{HSType, S}(hs::HSType) where {HSType, S}
   StateVector{HSType, S}(hs, zeros(S, length(hs)))
 end
 
-
 function Base.similar(sv::StateVector{HSType, S}) where {HSType, S}
   StateVector{HSType, S}(sv.hs)
 end
@@ -300,19 +300,24 @@ function StateDict{HSType, S}(hs::HSType) where {HSType, S}
   StateDict{HSType, S}(hs, Dict{Int, S}())
 end
 
-
 function Base.similar(sd::StateDict{HSType, S}) where {HSType, S}
   StateDict{HSType, S}(sd.hs)
 end
 
-Base.getindex(sd::StateDict, index) = sd.amplitudes[index]
+function Base.getindex(sd::StateDict{HSType, S}, index) where {HSType, S}
+  get(sd.amplitudes, index, zero(S))
+end
 
 function Base.setindex!(sd::StateDict{HSType, S},
                         val::S,
                         index) where {HSType, S}
-  sd.amplitudes[index] = val
+  if isapprox(val, 0, atol = 1e-10)
+    (index in sd.amplitudes) && delete!(sd.amplitudes, index)
+    zero(S)
+  else
+    sd.amplitudes[index] = val
+  end
 end
-
 
 function Base.:+(sd1::StateDict{HSType, S},
                  sd2::StateDict{HSType, S}) where {HSType, S}
@@ -390,5 +395,104 @@ Base.iterate(st::State, it) = iterate(st.amplitudes, it)
 Base.keys(st::State) = keys(st.amplitudes)
 Base.values(st::State) = values(st.amplitudes)
 Base.pairs(st::State) = pairs(st.amplitudes)
+
+############
+# Operator #
+############
+
+# Fock state convention:
+# |0,...,k> = C^+_0 ... C^+_k |0>
+# Operator monomial convention:
+# C^+_0 ... C^+_i ... C_j  ... C_0
+
+struct OperatorTerm{ScalarType <: Number}
+  coeff::ScalarType
+  # Bit masks used to change bits
+  annihilation_mask::FockState
+  creation_mask::FockState
+  # Bit masks for particle counting
+  annihilation_count_mask::FockState
+  creation_count_mask::FockState
+end
+
+"""Quantum-mechanical operator acting on states in a Hilbert space"""
+struct Operator{HSType <: HilbertSpace, ScalarType <: Number}
+  terms::Vector{OperatorTerm{ScalarType}}
+end
+
+# TODO: refactor
+function Operator{HSType, S}(op_expr::OperatorExpr{S},
+                             soi::SetOfIndices) where {HSType, S}
+  compute_count_mask = (d::Vector{Int}) -> begin
+    mask::FockState = 0
+    is_on = (length(d) % 2) == 1
+    for i = 1:64
+      if i in d
+        is_on = !is_on
+      else
+        if is_on
+          mask |= (one(FockState) << (i-1))
+        end
+      end
+    end
+    mask
+  end
+
+  creation_ind = Int[]   # Linear indices of creation operators in a monomial
+  annihilation_ind = Int[]  # Linear indices of annihilation operators in a monomial
+  terms = OperatorTerm{S}[]
+  for (monomial, coeff) in op_expr
+    empty!(creation_ind)
+    empty!(annihilation_ind)
+    annihilation_mask::FockState = 0
+    creation_mask::FockState = 0
+    for c_op in monomial.ops
+      if c_op.dagger
+        push!(creation_ind, soi[c_op.indices])
+        creation_mask |= (one(FockState) << (soi[c_op.indices]-1))
+      else
+        push!(annihilation_ind, soi[c_op.indices])
+        annihilation_mask |= (one(FockState) << (soi[c_op.indices]-1))
+      end
+    end
+    push!(terms, OperatorTerm(coeff,
+                              annihilation_mask,
+                              creation_mask,
+                              compute_count_mask(annihilation_ind),
+                              compute_count_mask(creation_ind)))
+  end
+  Operator{HSType, S}(terms)
+end
+
+function parity_number_of_bits(v::FockState)
+  x = copy(v)
+  # http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetNaive
+  x ⊻= (x >> 16)
+  x ⊻= (x >> 8)
+  x ⊻= (x >> 4)
+  x ⊻= (x >> 2)
+  x ⊻= (x >> 1)
+  x & 0x01
+end
+
+"""Act on a state and return a new state"""
+function (op::Operator)(st::StateType) where {StateType <: State}
+  target_st = similar(st)
+  for term in op.terms
+    for (i, a) in pairs(st)
+      f2 = st.hs[i]
+      (f2 & term.annihilation_mask) != term.annihilation_mask && continue
+      f2 &= ~term.annihilation_mask
+      ((f2 ⊻ term.creation_mask) & term.creation_mask) !=
+        term.creation_mask && continue
+      f3 = ~(~f2 & ~term.creation_mask)
+      sign = parity_number_of_bits((f2 & term.annihilation_count_mask) ⊻
+                                   (f3 & term.creation_count_mask)) == 0 ? 1 : -1
+      ind = getstateindex(target_st.hs, f3)
+      target_st[ind] += a * term.coeff * sign
+    end
+  end
+  target_st
+end
 
 end # module Hilbert
