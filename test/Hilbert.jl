@@ -46,9 +46,9 @@ fhs1 = FullHilbertSpace(soi)
 @test !(FockState(256) in fhs1)
 @test fhs1[121] == FockState(120)
 @test getstateindex(fhs1, FockState(120)) == 121
-@test fhs1[soi => Set{IndicesType}([])] == FockState(0)
+@test fhs1[soi, Set{IndicesType}([])] == FockState(0)
 # Fock state for C†(1,2)c†(2,4)|vac>
-@test fhs1[soi => Set{IndicesType}([[1,2],[2,4]])] == FockState(130)
+@test fhs1[soi, Set{IndicesType}([[1,2],[2,4]])] == FockState(130)
 
 fhs2 = fhs1
 @test length(fhs2) == 256
