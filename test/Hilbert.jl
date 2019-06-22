@@ -8,11 +8,11 @@ soi1 = SetOfIndices()
 @test length(soi1) == 0
 @test isempty(soi1)
 
-for i = 4:-1:1; insert!(soi1, IndicesType([i])) end
+for i = 4:-1:1; insert!(soi1, i) end
 @test length(soi1) == 4
-@test soi1[IndicesType([3])] == 3
+@test soi1[[3]] == 3
 
-soi2 = SetOfIndices([IndicesType([i]) for i in [1,2,3,4]])
+soi2 = SetOfIndices([[1],[2],[3],[4]])
 @test length(soi2) == 4
 @test soi1 == soi2
 
@@ -21,8 +21,8 @@ for i = 1:2; insert!(soi3, "up", i) end
 for i = 1:2; insert!(soi3, "down", i) end
 @test length(soi3) == 4
 @test soi3["down", 1] == 1
-@test IndicesType(["up", 1]) in soi3
-@test !(IndicesType(["down", 5]) in soi3)
+@test ["up", 1] in soi3
+@test !(["down", 5] in soi3)
 
 soi4 = SetOfIndices()
 for k in ["d","a","c","b"]; insert!(soi4, k) end
@@ -38,7 +38,7 @@ end
 
 using Base.Iterators
 
-soi = SetOfIndices([IndicesType([i,j]) for i=1:2 for j=1:4])
+soi = SetOfIndices([[i,j] for i=1:2 for j=1:4])
 
 fhs1 = FullHilbertSpace(soi)
 @test length(fhs1) == 256
@@ -74,7 +74,7 @@ end
 Cdag = c_dag("up", 2);
 @test repr(Cdag) == "1.0*c†(\"up\",2)"
 
-soi1 = SetOfIndices([IndicesType(["up",i]) for i=1:5])
+soi1 = SetOfIndices([["up", i] for i=1:5])
 soi2 = SetOfIndices()
 for i=1:2
   insert!(soi2, "up", i)
@@ -111,7 +111,7 @@ end
 
 @testset "State" begin
 
-soi = SetOfIndices([IndicesType([i]) for i=1:5])
+soi = SetOfIndices([[i] for i=1:5])
 fhs1 = FullHilbertSpace(soi)
 
 hss1 = HilbertSubspace()
@@ -159,7 +159,7 @@ end
 
 @testset "StateProjection" begin
 
-soi = SetOfIndices([IndicesType(["s", i]) for i=1:3])
+soi = SetOfIndices([["s", i] for i=1:3])
 fhs = FullHilbertSpace(soi)
 
 for st in [StateVector{FullHilbertSpace, Float64}(fhs),
@@ -172,7 +172,7 @@ for st in [StateVector{FullHilbertSpace, Float64}(fhs),
   check_state(st, Dict(fhs[1] => 0.1, fhs[3] => 0.2, fhs[5] => 0.3, fhs[7] => 0.4))
 
   # Project to a smaller FullHilbertSpace
-  soi2 = SetOfIndices([IndicesType(["s", i]) for i=1:2])
+  soi2 = SetOfIndices([["s", i] for i=1:2])
   fhs2 = FullHilbertSpace(soi2)
   proj_st = project(st, fhs2)
   check_state(proj_st, Dict(fhs[1] => 0.1, fhs[3] => 0.2))
@@ -190,7 +190,7 @@ end
 
 @testset "Operator" begin
 
-soi = SetOfIndices([IndicesType(["up", i]) for i=1:5])
+soi = SetOfIndices([["up", i] for i=1:5])
 fhs = FullHilbertSpace(soi)
 
 X = 3*c_dag("up",2)*c("up",2) + 2*c_dag("up",3)*c("up",3) + c("up",2)*c("up",3)

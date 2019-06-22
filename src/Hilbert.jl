@@ -21,8 +21,9 @@ mutable struct SetOfIndices
 end
 
 SetOfIndices() = SetOfIndices(SortedDict{IndicesType, Int}())
-function SetOfIndices(v::Vector{IndicesType})
-  SetOfIndices(SortedDict{IndicesType, Int}(i => n for (n, i) in enumerate(v)))
+function SetOfIndices(v::AbstractVector)
+  SetOfIndices(SortedDict{IndicesType, Int}(
+    IndicesType(i) => n for (n, i) in enumerate(v)))
 end
 
 """Insert a new index sequence"""
