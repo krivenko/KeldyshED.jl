@@ -46,9 +46,9 @@ fhs1 = FullHilbertSpace(soi)
 @test !(FockState(256) in fhs1)
 @test fhs1[121] == FockState(120)
 @test getstateindex(fhs1, FockState(120)) == 121
-@test fhs1[soi, Set{IndicesType}([])] == FockState(0)
+@test fhs1[Set{IndicesType}([])] == FockState(0)
 # Fock state for C†(1,2)c†(2,4)|vac>
-@test fhs1[soi, Set{IndicesType}([[1,2],[2,4]])] == FockState(130)
+@test fhs1[Set{IndicesType}([[1,2],[2,4]])] == FockState(130)
 
 fhs2 = fhs1
 @test length(fhs2) == 256
@@ -83,7 +83,7 @@ end
 
 fhs2 = FullHilbertSpace(soi2)
 
-hss1 = HilbertSubspace(1)
+hss1 = HilbertSubspace()
 insert!(hss1, fhs2[1]) # 000
 insert!(hss1, fhs2[2]) # 001
 insert!(hss1, fhs2[3]) # 010
@@ -92,7 +92,7 @@ insert!(hss1, fhs2[4]) # 011
 @test fhs2[3] in hss1
 @test !(fhs2[7] in hss1)
 
-hss2 = HilbertSubspace(2)
+hss2 = HilbertSubspace()
 insert!(hss2, fhs2[5]) # 100
 insert!(hss2, fhs2[6]) # 101
 insert!(hss2, fhs2[7]) # 110
@@ -204,7 +204,7 @@ for st in [StateVector{FullHilbertSpace, Float64}(fhs),
   st[8] = 1.0
   check_state(st, Dict(fhs[8] => 1.0))
 
-  new_state = opX(st)
+  new_state = opX * st
 
   check_state(new_state, Dict(fhs[2] => -1.0, fhs[8] => 5.0))
 end
@@ -228,7 +228,7 @@ for st in [StateVector{FullHilbertSpace, Float64}(fhs),
            StateDict{FullHilbertSpace, Float64}(fhs)]
   st[10] = 1.0                                                        # 0110
   check_state(st, Dict(fhs[10] => 1.0))                               # old state
-  check_state(Operator{FullHilbertSpace, Float64}(X, soi)(st),
+  check_state(Operator{FullHilbertSpace, Float64}(X, soi) * st,
               Dict(fhs[7] => 1.0))                                    # new state
 end
 

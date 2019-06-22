@@ -37,12 +37,12 @@ for o1=1:3, o2=1:3
 end
 
 fhs = FullHilbertSpace(soi)
-u1 = fhs[soi, Set{IndicesType}([["up", 1]])]
-u2 = fhs[soi, Set{IndicesType}([["up", 2]])]
-u3 = fhs[soi, Set{IndicesType}([["up", 3]])]
-d1 = fhs[soi, Set{IndicesType}([["dn", 1]])]
-d2 = fhs[soi, Set{IndicesType}([["dn", 2]])]
-d3 = fhs[soi, Set{IndicesType}([["dn", 3]])]
+u1 = fhs[Set{IndicesType}([["up", 1]])]
+u2 = fhs[Set{IndicesType}([["up", 2]])]
+u3 = fhs[Set{IndicesType}([["up", 3]])]
+d1 = fhs[Set{IndicesType}([["dn", 1]])]
+d2 = fhs[Set{IndicesType}([["dn", 2]])]
+d3 = fhs[Set{IndicesType}([["dn", 3]])]
 
 Hop = Operator{FullHilbertSpace, Float64}(H, soi)
 
@@ -280,7 +280,7 @@ for op in all_ops
   for i=1:64
     init_state = StateDict{FullHilbertSpace, Float64}(fhs)
     init_state[i] = 1.0
-    final_state = op(init_state)
+    final_state = op * init_state
     for (f, a) in pairs(final_state)
       isapprox(a, 0, atol = 1e-10) && continue
       push!(conn, (SP3[i], SP3[f]))
