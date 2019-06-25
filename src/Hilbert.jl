@@ -22,8 +22,12 @@ end
 
 SetOfIndices() = SetOfIndices(SortedDict{IndicesType, Int}())
 function SetOfIndices(v::AbstractVector)
-  SetOfIndices(SortedDict{IndicesType, Int}(
-    IndicesType(i) => n for (n, i) in enumerate(v)))
+  map_index_n = SortedDict{IndicesType, Int}(IndicesType(i) => 1 for i in v)
+  # Reorder the linear indices
+  map_index_n = SortedDict{IndicesType, Int}(
+    k => n for (n, (k, v)) in enumerate(map_index_n)
+  )
+  SetOfIndices(map_index_n)
 end
 
 """Insert a new index sequence"""

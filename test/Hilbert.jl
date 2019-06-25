@@ -26,11 +26,15 @@ for i = 1:2; insert!(soi3, "down", i) end
 
 soi4 = SetOfIndices()
 for k in ["d","a","c","b"]; insert!(soi4, k) end
-@test [(k, v) for (k, v) in soi4] == [(["a"],1),(["b"],2),(["c"],3),(["d"],4)]
-@test collect(keys(soi4)) == [["a"],["b"],["c"],["d"]]
-@test collect(values(soi4)) == [1,2,3,4]
-@test collect(pairs(soi4)) == [["a"]=>1,["b"]=>2,["c"]=>3,["d"]=>4]
-@test reversemap(soi4) == [["a"],["b"],["c"],["d"]]
+soi5 = SetOfIndices([["d"],["a"],["c"],["b"]])
+
+for soi in (soi4, soi5)
+  @test [(k, v) for (k, v) in soi] == [(["a"],1),(["b"],2),(["c"],3),(["d"],4)]
+  @test collect(keys(soi)) == [["a"],["b"],["c"],["d"]]
+  @test collect(values(soi)) == [1,2,3,4]
+  @test collect(pairs(soi)) == [["a"]=>1,["b"]=>2,["c"]=>3,["d"]=>4]
+  @test reversemap(soi) == [["a"],["b"],["c"],["d"]]
+end
 
 end
 
