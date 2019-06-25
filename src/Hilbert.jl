@@ -665,8 +665,8 @@ end
 #######################################
 Base.eltype(sd::SpacePartition) = Pair{Int, Int}
 
-Base.length(sp::SpacePartition) = length(sp.subspaces)
-Base.isempty(sp::SpacePartition) = isempty(sp.subspaces)
+Base.length(sp::SpacePartition) = length(sp.hs)
+Base.isempty(sp::SpacePartition) = isempty(sp.hs)
 
 Base.size(sp::SpacePartition) = (length(sp),)
 Base.size(sp::SpacePartition, dim) = dim == 1 ? length(sp) : 1
