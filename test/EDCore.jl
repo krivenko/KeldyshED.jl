@@ -42,7 +42,8 @@ soi, H = make_hamiltonian(n_orb, mu, U, J)
 
 ed = EDCore(H, soi)
 
-@test length(ed.subspaces) == 44
+n_subspaces = 44
+@test length(ed.subspaces) == n_subspaces
 @test isapprox(ed.gs_energy, -0.6, atol=1e-10)
 z_ref = 14.385456264792685
 @test isapprox(partition_function(ed, beta), z_ref, atol=1e-10)
@@ -67,7 +68,7 @@ en_ref = Vector{Float64}[[0],[0],[0],[0,0.4],[0,0.4],[0,0.4],[0],[0],[0],
 [4.1],[4.1],[4.1],[6.6]]
 
 en = energies(ed)
-for i=1:44
+for i=1:n_subspaces
   i_ref = findfirst(x->x==basis[i], basis_ref)
   @test isapprox(en[i], en_ref[i_ref], atol = 1e-10)
 end
@@ -108,7 +109,7 @@ I, I, I,
 I, I, I, I, I, I, I]
 
 u_mat = unitary_matrices(ed)
-for i=1:44
+for i=1:n_subspaces
   i_ref = findfirst(x->x==basis[i], basis_ref)
   h = u_mat[i] * Diagonal(en[i]) * (u_mat[i]')
   h_ref = u_mat_ref[i_ref] * Diagonal(en_ref[i_ref]) * (u_mat_ref[i_ref]')
@@ -119,7 +120,7 @@ end
 rho_ref = [Diagonal(exp.(-beta * en_bl) / z_ref) for en_bl in en_ref]
 
 rho = density_matrix(ed, beta)
-for i=1:44
+for i=1:n_subspaces
   i_ref = findfirst(x->x==basis[i], basis_ref)
   @test isapprox(rho[i], rho_ref[i_ref], atol = 1e-8)
 end
@@ -144,13 +145,24 @@ Dict([1=>17,2=>24,3=>22,4=>18,5=>26,6=>25,7=>19,10=>5,11=>6,12=>20,13=>8,14=>9,
 16=>32,17=>33,18=>36,20=>27,21=>15,22=>30,23=>37,24=>31,25=>34,26=>35,28=>39,
 29=>40,30=>42,31=>43,37=>41,38=>44])]
 
+function check_connection(conn_ref, i, j)
+  # Account for a possible difference in subspace order in basis and basis_ref
+  i_ref = findfirst(x->x==basis[i], basis_ref)
+  j_ref = get(conn_ref, i_ref, nothing)
+  (isnothing(j) && isnothing(j_ref)) || (basis[j] == basis_ref[j_ref])
+end
+
 for (indices, n) in soi
-  for i=1:44
-    j = cdag_connection(ed, n, i)
-    i_ref = findfirst(x->x==basis[i], basis_ref)
-    j_ref = get(cdag_conn_ref[n], i_ref, nothing)
-    @test (j == nothing && j_ref == nothing) || (basis[j] == basis_ref[j_ref])
+  for i=1:n_subspaces
+    @test check_connection(cdag_conn_ref[n], i, cdag_connection(ed, n, i))
+    @test check_connection(cdag_conn_ref[n], i, cdag_connection(ed, indices, i))
   end
+
+  cdag_conn_mat = cdag_connection(ed, n)
+  @test cdag_conn_mat == cdag_connection(ed, indices)
+
+  @test cdag_conn_mat ==
+        [(i == cdag_connection(ed, n, j)) for i=1:n_subspaces, j=1:n_subspaces]
 end
 
 # c_connection()
@@ -159,23 +171,32 @@ end
 c_conn_ref = map(d -> Dict(j => i for (i, j) in d), cdag_conn_ref)
 
 for (indices, n) in soi
-  for i=1:44
-    j = c_connection(ed, n, i)
-    i_ref = findfirst(x->x==basis[i], basis_ref)
-    j_ref = get(c_conn_ref[n], i_ref, nothing)
-    @test (j == nothing && j_ref == nothing) ||
-          basis[j] == basis_ref[j_ref]
+  for i=1:n_subspaces
+    @test check_connection(c_conn_ref[n], i, c_connection(ed, n, i))
+    @test check_connection(c_conn_ref[n], i, c_connection(ed, indices, i))
   end
+
+  c_conn_mat = c_connection(ed, n)
+  @test c_conn_mat == c_connection(ed, indices)
+
+  @test c_conn_mat ==
+        [(i == c_connection(ed, n, j)) for i=1:n_subspaces, j=1:n_subspaces]
 end
 
 # cdag_matrix() and c_matrix()
 # Check that C† * C is the number of particles
 for (indices, n) in soi
-  for i=1:44
+  for i=1:n_subspaces
     j = c_connection(ed, n, i)
-    j == nothing && continue
+    isnothing(j) && continue
 
-    n_mat = cdag_matrix(ed, n, j) * c_matrix(ed, n, i)
+    cdag_mat = cdag_matrix(ed, n, j)
+    c_mat = c_matrix(ed, n, i)
+
+    @test cdag_mat == cdag_matrix(ed, indices, j)
+    @test c_mat == c_matrix(ed, indices, i)
+
+    n_mat = cdag_mat * c_mat
     n_mat = u_mat[i] * n_mat * (u_mat[i]')
 
     n_mat_ref = Diagonal([digits(fs,base=2,pad=64)[n] for fs in basis[i]])
