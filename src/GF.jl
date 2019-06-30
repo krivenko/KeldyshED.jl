@@ -1,6 +1,8 @@
 using KeldyshED: EDCore
 using Keldysh
 using LinearAlgebra: Diagonal, tr
+using Distributed
+@everywhere using SharedArrays
 
 export computegf
 
@@ -11,7 +13,14 @@ function computegf(ed::EDCore, grid::TimeGrid, indices::IndicesType, β)
   en = energies(ed)
   ρ = density_matrix(ed, β)
 
-  for t1 in grid, t2 in grid
+  data = SharedArray{ComplexF64, 2}(length(grid), length(grid), pids = workers())
+  all_jobs = [((n1, t1), (n2, t2)) for (n1, t1) in enumerate(grid)
+                                   for (n2, t2) in enumerate(grid)]
+  njobs = length(all_jobs)
+
+  @sync @distributed for job = 1:length(all_jobs)
+    (n1, t1), (n2, t2) = all_jobs[job]
+
     greater = θ(t1.val, t2.val)
     Δt = greater ? (t1.val.val - t2.val.val) : (t2.val.val - t1.val.val)
 
@@ -38,7 +47,8 @@ function computegf(ed::EDCore, grid::TimeGrid, indices::IndicesType, β)
 
       val += tr(ρ[outer_sp] * left_mat * right_mat)
     end
-    gf[t1, t2] = (greater ? -1im : 1im) * val
+    data[n1, n2] = (greater ? -1im : 1im) * val
   end
+  gf.data[:] = data
   gf
 end

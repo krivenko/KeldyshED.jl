@@ -9,6 +9,7 @@ using KeldyshED.Operators
 using KeldyshED: EDCore, computegf
 using ArgParse
 using HDF5
+using Distributed
 
 function ArgParse.parse_item(::Type{Vector{T}}, str::AbstractString) where T
   map(s -> parse(T, s), split(str, ","))
@@ -78,6 +79,8 @@ end
 function main(args)
   p = parse_commandline()
 
+  println("Running with $(length(workers())) workers")
+
   β = p["beta"]
   ε = p["eps"]
   V = p["V"]
@@ -108,7 +111,8 @@ function main(args)
   H = H_loc + H_bath + H_hyb
 
   println("Diagonalizing Hamiltonian...")
-  ed = EDCore(H, soi)
+  ed, tottime, bytes, gctime, memallocs = @timed EDCore(H, soi)
+  println("Diagonalized in $(tottime) sec (gctime = $(gctime) sec)")
 
   println("Found $(length(ed.subspaces)) invariant subspaces")
   println("Ground state energy: $(ed.gs_energy)")
@@ -117,8 +121,15 @@ function main(args)
   contour = twist(Contour(full_contour, tmax = p["tmax"], β=β))
   grid = TimeGrid(contour, npts_real = p["npts_real"], npts_imag = p["npts_imag"])
 
-  println("Computing GF...")
-  gf = Dict(s => computegf(ed, grid, IndicesType([s, 0]), β) for s in spins)
+  gf = Dict{String,TimeGF}()
+  for s in spins
+    println("Computing GF($s) ...")
+    gf[s], tottime, bytes, gctime, memallocs = @timed computegf(ed,
+                                                                grid,
+                                                                IndicesType([s, 0]),
+                                                                β)
+    println("Computed in $(tottime) sec (gctime = $(gctime) sec)")
+  end
 
   println("Saving results...")
   h5open(p["gf.file"], "w") do file
