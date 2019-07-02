@@ -16,5 +16,4 @@ depends on.
 Usage
 -----
 
-Run `JULIA_PROJECT="<path_to_sources>" julia -p <n_cpu_cores> <path_to_sources>/bin/anderson.jl`
-to compute Green's functions of the single orbital Anderson model with descrete bath.
+Some usage examples can be found in the `test` subdirectory.
