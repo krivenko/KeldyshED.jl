@@ -70,4 +70,16 @@ h5open("test/GF.ref.h5", "r") do ref_file
   end
 end
 
+# Test other methods of computegf()
+d = IndicesType(["down", 0])
+u = IndicesType(["up", 0])
+
+@test computegf(ed, grid, [(d, d), (u, u)], β) == gf
+
+gf_matrix = computegf(ed, grid, [d,u], [d,u], β)
+@test gf_matrix[1,1] == gf[1]
+@test gf_matrix[1,2] == TimeGF((t1,t2) -> 0, grid)
+@test gf_matrix[2,1] == TimeGF((t1,t2) -> 0, grid)
+@test gf_matrix[2,2] == gf[2]
+
 end

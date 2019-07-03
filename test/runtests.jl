@@ -1,3 +1,5 @@
+#!/usr/bin/env julia
+#
 # KeldyshED.jl
 #
 # Copyright (C) 2019 Igor Krivenko <igor.s.krivenko@gmail.com>
@@ -15,8 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
-
-#!/usr/bin/env julia
 
 include("Operators.jl")
 include("Hilbert.jl")
