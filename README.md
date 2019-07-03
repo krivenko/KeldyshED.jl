@@ -4,7 +4,7 @@ KeldyshED.jl
 Equilibrium Exact Diagonalization solver for finite fermionic models that can
 also compute Green's functions on the Keldysh contour.
 
-Copyright (C) 2019 Igor Krivenko <igor.s.krivenko@gmail.com>
+Copyright (C) 2019 Igor Krivenko <igor.s.krivenko@gmail.com>  
 Copyright (C) 2015 P. Seth, I. Krivenko, M. Ferrero and O. Parcollet
 
 This is my first attempt at writing Julia 1.1 code and, to a large extent, a
