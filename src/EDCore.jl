@@ -1,3 +1,21 @@
+# KeldyshED.jl
+#
+# Copyright (C) 2019 Igor Krivenko <igor.s.krivenko@gmail.com>
+# Copyright (C) 2015 P. Seth, I. Krivenko, M. Ferrero and O. Parcollet
+#
+# KeldyshED.jl is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# KeldyshED.jl is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
+
 using KeldyshED.Operators
 using KeldyshED.Hilbert
 using LinearAlgebra
@@ -281,13 +299,13 @@ energies(ed::EDCore) = [es.eigenvalues for es in ed.eigensystems]
 unitary_matrices(ed::EDCore) = [es.unitary_matrix for es in ed.eigensystems]
 
 """Partition function"""
-function partition_function(ed::EDCore, beta)
-  sum(sum(exp.(-beta * es.eigenvalues)) for es in ed.eigensystems)
+function partition_function(ed::EDCore, β)
+  sum(sum(exp.(-β * es.eigenvalues)) for es in ed.eigensystems)
 end
 
 """Equilibrium density matrix in the block-diagonal form"""
-function density_matrix(ed::EDCore, beta)
-  z = partition_function(ed, beta)
-  [Diagonal(exp.(-beta * es.eigenvalues) / z) for es in ed.eigensystems]
+function density_matrix(ed::EDCore, β)
+  z = partition_function(ed, β)
+  [Diagonal(exp.(-β * es.eigenvalues) / z) for es in ed.eigensystems]
 end
 
