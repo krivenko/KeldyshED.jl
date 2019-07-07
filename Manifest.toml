@@ -16,10 +16,10 @@ uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
 version = "0.8.10"
 
 [[BinaryProvider]]
-deps = ["Libdl", "SHA"]
-git-tree-sha1 = "c7361ce8a2129f20b0e05a89f7070820cfed6648"
+deps = ["Libdl", "Logging", "SHA"]
+git-tree-sha1 = "8153fd64131cd00a79544bb23788877741f627bb"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
-version = "0.5.4"
+version = "0.5.5"
 
 [[Blosc]]
 deps = ["BinaryProvider", "CMakeWrapper", "Compat", "Libdl"]
@@ -99,17 +99,17 @@ version = "0.20.0"
 
 [[Keldysh]]
 deps = ["HDF5", "LinearAlgebra", "QuadGK", "Test"]
-git-tree-sha1 = "b33a40f9b1f08cc81aec8b338a41f551d2e857f4"
-repo-rev = "master"
+git-tree-sha1 = "9570204a77d7bf31b9609ecb7ea0daa8c219ab81"
+repo-rev = "3baff12712af318d392e9d98307c9fc430225f01"
 repo-url = "git@github.com:kleinhenz/Keldysh.jl.git"
 uuid = "50f2bc7e-5fd7-11e9-13c7-85fb88b4f34f"
-version = "0.1.0"
+version = "0.5.0"
 
 [[LibCURL]]
 deps = ["BinaryProvider", "Libdl"]
-git-tree-sha1 = "5ee138c679fa202ebe211b2683d1eee2a87b3dbe"
+git-tree-sha1 = "fd5fc15f2a04608fe1435a769dbbfc7959ff1daa"
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.5.1"
+version = "0.5.2"
 
 [[LibExpat]]
 deps = ["Compat"]
