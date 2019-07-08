@@ -101,7 +101,7 @@ version = "0.20.0"
 deps = ["HDF5", "LinearAlgebra", "QuadGK", "Test"]
 git-tree-sha1 = "9570204a77d7bf31b9609ecb7ea0daa8c219ab81"
 repo-rev = "3baff12712af318d392e9d98307c9fc430225f01"
-repo-url = "git@github.com:kleinhenz/Keldysh.jl.git"
+repo-url = "https://github.com/kleinhenz/Keldysh.jl.git"
 uuid = "50f2bc7e-5fd7-11e9-13c7-85fb88b4f34f"
 version = "0.5.0"
 
