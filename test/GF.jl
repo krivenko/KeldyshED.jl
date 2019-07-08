@@ -61,7 +61,8 @@ grid = TimeGrid(contour, npts_real = npts_real, npts_imag = npts_imag)
 
 gf = [computegf(ed, grid, IndicesType([s, 0]), β) for s in spins]
 
-h5open("test/GF.ref.h5", "r") do ref_file
+test_dir = @__DIR__
+h5open(test_dir * "/GF.ref.h5", "r") do ref_file
   @test isapprox(ed.gs_energy, read(ref_file["gs_energy"]), atol = 1.e-8)
   for s = 1:2
     gf_ref = read(ref_file["/gf/$(s-1)"], TimeGF)
