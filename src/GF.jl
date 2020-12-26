@@ -32,8 +32,10 @@ export computegf
 """
 function computegf(ed::EDCore,
                    grid::TimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
-                   β)
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}})
+
+  β = length(get_branch(grid.contour, imaginary_branch))
+
   en = energies(ed)
   ρ = density_matrix(ed, β)
 
@@ -89,17 +91,17 @@ function computegf(ed::EDCore,
 end
 
 """
-  Compute Green's function on a given Keldysh contour at inverse temperature β
+  Compute Green's function on a given Keldysh contour
 
   This method returns one TimeGF object corresponding to one diagonal matrix
   element of Keldysh GF.
 """
-function computegf(ed::EDCore, grid::TimeGrid, c_cdag_index::IndicesType, β)
-  computegf(ed, grid, [(c_cdag_index, c_cdag_index)], β)[1]
+function computegf(ed::EDCore, grid::TimeGrid, c_cdag_index::IndicesType)
+  computegf(ed, grid, [(c_cdag_index, c_cdag_index)])[1]
 end
 
 """
-  Compute Green's function on a given Keldysh contour at inverse temperature β
+  Compute Green's function on a given Keldysh contour
 
   This method returns a matrix of TimeGF objects constructed from the direct
   product of `c_indices` and `cdag_indices`.
@@ -107,9 +109,8 @@ end
 function computegf(ed::EDCore,
                    grid::TimeGrid,
                    c_indices::Vector{IndicesType},
-                   cdag_indices::Vector{IndicesType},
-                   β)
+                   cdag_indices::Vector{IndicesType})
   c_cdag_index_pairs = [(i, j) for i in c_indices for j in cdag_indices]
-  reshape(computegf(ed, grid, c_cdag_index_pairs, β),
+  reshape(computegf(ed, grid, c_cdag_index_pairs),
           (length(c_indices), length(cdag_indices)))
 end
