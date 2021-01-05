@@ -65,6 +65,9 @@ end
   @test repr(x - y) == "-1.0*c†(1) + 1.0*c(0)"
   @test repr((x + y) * (x - y)) == "2.0*c†(1)c(0)"
 
+  # Nested algebra
+  @test 0.25*n(1) == 0.5*(0.5*n(1))
+    
   # N^3
   N  = n("up") + n("dn");
   N3 = N * N * N;
