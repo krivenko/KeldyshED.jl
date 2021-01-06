@@ -9,7 +9,7 @@ also compute Green's functions on the Keldysh contour.
 Copyright (C) 2019 Igor Krivenko <igor.s.krivenko@gmail.com>  
 Copyright (C) 2015 P. Seth, I. Krivenko, M. Ferrero and O. Parcollet
 
-This is my first attempt at writing Julia 1.1 code and, to a large extent, a
+This is my first attempt at writing Julia code and, to a large extent, a
 simplified port of the `TRIQS/atom_diag` library.
 
 Special thanks to Joseph Kleinhenz for reviewing my code, as well as for writing
