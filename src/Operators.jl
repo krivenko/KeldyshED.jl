@@ -185,7 +185,7 @@ function Base.:*(op::OperatorExpr{S}, alpha::Number) where S
   if isapprox(alpha, 0, atol = 100*eps(real(S)))
     OperatorExpr{S}()
   else
-    OperatorExpr{S}(SortedDict{Monomial, S}(m => alpha for (m,c) in op.monomials))
+    OperatorExpr{S}(SortedDict{Monomial, S}(m => alpha * c for (m,c) in op.monomials))
   end
 end
 Base.:*(alpha::Number, op::OperatorExpr{S}) where S = op * alpha
