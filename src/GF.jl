@@ -27,14 +27,25 @@ export computegf
 """
   Compute Green's function on a given Keldysh contour at inverse temperature β
 
+  If 'β' is omitted, 'grid' must be defined on a time contour containing the
+  imaginary branch.
+
   This method returns a vector of TimeGF objects, one element per a pair of
   indices in `c_cdag_index_pairs`.
 """
 function computegf(ed::EDCore,
                    grid::TimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}})
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
+                   β = nothing)
 
-  β = length(get_branch(grid.contour, imaginary_branch))
+  if isnothing(β)
+    im_b = get_branch(grid.contour, imaginary_branch)
+    if isnothing(im_b)
+      throw(DomainError("Cannot extract inverse temperature " *
+                        "-- no imaginary branch on the supplied contour"))
+    end
+    β = length(im_b)
+  end
 
   en = energies(ed)
   ρ = density_matrix(ed, β)
@@ -91,17 +102,26 @@ function computegf(ed::EDCore,
 end
 
 """
-  Compute Green's function on a given Keldysh contour
+  Compute Green's function on a given Keldysh contour at inverse temperature β
+
+  If 'β' is omitted, 'grid' must be defined on a time contour containing the
+  imaginary branch.
 
   This method returns one TimeGF object corresponding to one diagonal matrix
   element of Keldysh GF.
 """
-function computegf(ed::EDCore, grid::TimeGrid, c_cdag_index::IndicesType)
-  computegf(ed, grid, [(c_cdag_index, c_cdag_index)])[1]
+function computegf(ed::EDCore,
+                   grid::TimeGrid,
+                   c_cdag_index::IndicesType,
+                   β = nothing)
+  computegf(ed, grid, [(c_cdag_index, c_cdag_index)], β)[1]
 end
 
 """
-  Compute Green's function on a given Keldysh contour
+  Compute Green's function on a given Keldysh contour at inverse temperature β
+
+  If 'β' is omitted, 'grid' must be defined on a time contour containing the
+  imaginary branch.
 
   This method returns a matrix of TimeGF objects constructed from the direct
   product of `c_indices` and `cdag_indices`.
@@ -109,8 +129,9 @@ end
 function computegf(ed::EDCore,
                    grid::TimeGrid,
                    c_indices::Vector{IndicesType},
-                   cdag_indices::Vector{IndicesType})
+                   cdag_indices::Vector{IndicesType},
+                   β = nothing)
   c_cdag_index_pairs = [(i, j) for i in c_indices for j in cdag_indices]
-  reshape(computegf(ed, grid, c_cdag_index_pairs),
+  reshape(computegf(ed, grid, c_cdag_index_pairs, β),
           (length(c_indices), length(cdag_indices)))
 end
