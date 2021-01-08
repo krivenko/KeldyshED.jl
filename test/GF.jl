@@ -59,7 +59,7 @@ ed = EDCore(H, soi)
 contour = twist(Contour(full_contour, tmax = tmax, β=β))
 grid = TimeGrid(contour, npts_real = npts_real, npts_imag = npts_imag)
 
-gf = [computegf(ed, grid, IndicesType([s, 0]), β) for s in spins]
+gf = [computegf(ed, grid, IndicesType([s, 0])) for s in spins]
 
 test_dir = @__DIR__
 h5open(test_dir * "/GF.ref.h5", "r") do ref_file
@@ -75,12 +75,23 @@ end
 d = IndicesType(["down", 0])
 u = IndicesType(["up", 0])
 
+@test computegf(ed, grid, [(d, d), (u, u)]) == gf
 @test computegf(ed, grid, [(d, d), (u, u)], β) == gf
+
+gf_matrix = computegf(ed, grid, [d,u], [d,u])
+@test gf_matrix[1,1] == gf[1]
+@test gf_matrix[1,2] == TimeGF((t1,t2) -> 0, grid)
+@test gf_matrix[2,1] == TimeGF((t1,t2) -> 0, grid)
+@test gf_matrix[2,2] == gf[2]
 
 gf_matrix = computegf(ed, grid, [d,u], [d,u], β)
 @test gf_matrix[1,1] == gf[1]
 @test gf_matrix[1,2] == TimeGF((t1,t2) -> 0, grid)
 @test gf_matrix[2,1] == TimeGF((t1,t2) -> 0, grid)
 @test gf_matrix[2,2] == gf[2]
+
+# Attempt to call computegf() on a 2-branch contour and without β
+grid2 = TimeGrid(Contour(keldysh_contour, tmax = tmax), npts_real = npts_real)
+@test_throws DomainError computegf(ed, grid2, [d,u], [d,u])
 
 end
