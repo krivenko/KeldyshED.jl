@@ -18,6 +18,7 @@
 
 using KeldyshED: EDCore
 using Keldysh
+import Keldysh: θ
 using LinearAlgebra: Diagonal, tr
 using Distributed
 @everywhere using SharedArrays
