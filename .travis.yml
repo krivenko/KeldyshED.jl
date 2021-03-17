@@ -2,7 +2,7 @@ language: julia
 sudo: required
 
 julia:
-  - 1.2
+  - 1.5
 dist: xenial
 
 addons:
