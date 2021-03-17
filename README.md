@@ -24,7 +24,7 @@ typing the following commands in Julia's `Pkg` REPL:
 
     add HDF5
     add ArgParse
-    add https://github.com/kleinhenz/Keldysh.jl.git#v0.5.0
+    add https://github.com/kleinhenz/Keldysh.jl.git#v0.5.1
 
 Some usage examples can be found in the `test` subdirectory.
 
