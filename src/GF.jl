@@ -18,53 +18,32 @@
 
 using KeldyshED: EDCore
 using Keldysh
-import Keldysh: θ
 using LinearAlgebra: Diagonal, tr
 using Distributed
-@everywhere using SharedArrays
 
 export computegf
 
-"""
-  Compute Green's function on a given Keldysh contour at inverse temperature β
-
-  If 'β' is omitted, 'grid' must be defined on a time contour containing the
-  imaginary branch.
-
-  This method returns a vector of TimeGF objects, one element per a pair of
-  indices in `c_cdag_index_pairs`.
-"""
-function computegf(ed::EDCore,
-                   grid::TimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
-                   β = nothing)
-
-  if isnothing(β)
-    im_b = get_branch(grid.contour, imaginary_branch)
-    if isnothing(im_b)
-      throw(DomainError("Cannot extract inverse temperature " *
-                        "-- no imaginary branch on the supplied contour"))
-    end
-    β = length(im_b)
-  end
+function _computegf!(ed::EDCore,
+                     gf::AbstractTimeGF{T, scalar},
+                     c_indices::Vector{IndicesType},
+                     cdag_indices::Vector{IndicesType},
+                     β::Float64) where {T <: Number, scalar}
 
   en = energies(ed)
   ρ = density_matrix(ed, β)
 
-  data = SharedArray{ComplexF64, 3}(length(c_cdag_index_pairs),
-                                    length(grid),
-                                    length(grid),
-                                    pids = workers())
-  all_jobs = [((ind_n, indices), (n1, t1), (n2, t2))
-              for (ind_n, indices) in enumerate(c_cdag_index_pairs)
-              for (n1, t1) in enumerate(grid)
-              for (n2, t2) in enumerate(grid)]
-  njobs = length(all_jobs)
+  norb = norbitals(gf)
+  D = TimeDomain(gf)
+
+  all_jobs = [((c_n, c_index), (cdag_n, cdag_index), (t1, t2))
+              for (c_n, c_index) in enumerate(c_indices)
+              for (cdag_n, cdag_index) in enumerate(cdag_indices)
+              for (t1, t2) in D.points]
 
   @sync @distributed for job = 1:length(all_jobs)
-    (ind_n, (c_index, cdag_index)), (n1, t1), (n2, t2) = all_jobs[job]
+    (c_n, c_index), (cdag_n, cdag_index), (t1, t2) = all_jobs[job]
 
-    greater = θ(t1.val, t2.val)
+    greater = heaviside(t1.val, t2.val)
     Δt = greater ? (t1.val.val - t2.val.val) : (t2.val.val - t1.val.val)
 
     left_conn_f = greater ? (sp) -> c_connection(ed, c_index, sp) :
@@ -93,46 +72,186 @@ function computegf(ed::EDCore,
 
       left_mat = left_mat_f(inner_sp)
       inner_exp = Diagonal(exp.(-1im * inner_energies * Δt))
-      left_mat = left_mat * inner_exp
 
+      left_mat = left_mat * inner_exp
       val += tr(ρ[outer_sp] * left_mat * right_mat)
     end
-    data[ind_n, n1, n2] = (greater ? -1im : 1im) * val
+    if scalar
+      gf[t1, t2] = (greater ? -1im : 1im) * val
+    else
+      # A bit hacky ...
+      val_mat = zeros(T, norb, norb)
+      val_mat[c_n, cdag_n] = (greater ? -1im : 1im) * val
+      gf[t1, t2] += val_mat
+    end
+    # TODO: Reduction over workers
   end
-  [TimeGF(data[i,:,:], grid) for i=1:length(c_cdag_index_pairs)]
+end
+
+#
+# Compute scalar-valued Green's functions
+#
+
+"""
+  Compute Green's function on a full 3-branch contour
+
+  This method returns a scalar-valued `TimeInvariantFullTimeGF` object.
+"""
+function computegf(ed::EDCore,
+                   grid::FullTimeGrid,
+                   c_index::IndicesType,
+                   cdag_index::IndicesType)::
+                   TimeInvariantFullTimeGF{ComplexF64, true}
+  gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
+  _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+  gf
 end
 
 """
-  Compute Green's function on a given Keldysh contour at inverse temperature β
+  Compute Green's function on a Keldysh contour with a decoupled initial
+  thermal state at inverse temperature β
 
-  If 'β' is omitted, 'grid' must be defined on a time contour containing the
-  imaginary branch.
-
-  This method returns one TimeGF object corresponding to one diagonal matrix
-  element of Keldysh GF.
+  This method returns a scalar-valued `TimeInvariantKeldyshTimeGF` object.
 """
 function computegf(ed::EDCore,
-                   grid::TimeGrid,
-                   c_cdag_index::IndicesType,
-                   β = nothing)
-  computegf(ed, grid, [(c_cdag_index, c_cdag_index)], β)[1]
+                   grid::KeldyshTimeGrid,
+                   c_index::IndicesType,
+                   cdag_index::IndicesType,
+                   β::Float64)::
+                   TimeInvariantKeldyshTimeGF{ComplexF64, true}
+  gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
+  _computegf!(ed, gf, [c_index], [cdag_index], β)
+  gf
 end
 
 """
-  Compute Green's function on a given Keldysh contour at inverse temperature β
+  Compute imaginary time Green's function
 
-  If 'β' is omitted, 'grid' must be defined on a time contour containing the
-  imaginary branch.
-
-  This method returns a matrix of TimeGF objects constructed from the direct
-  product of `c_indices` and `cdag_indices`.
+  This method returns a scalar-valued `ImaginaryTimeGF` object.
 """
 function computegf(ed::EDCore,
-                   grid::TimeGrid,
+                   grid::ImaginaryTimeGrid,
+                   c_index::IndicesType,
+                   cdag_index::IndicesType)::
+                   ImaginaryTimeGF{ComplexF64, true}
+  gf = ImaginaryTimeGF(grid, 1, fermionic, true)
+  _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+  gf
+end
+
+#
+# Compute lists of scalar-valued Green's functions
+#
+
+"""
+  Compute Green's function on a full 3-branch contour
+
+  This method returns a vector of scalar-valued `TimeInvariantFullTimeGF`
+  objects, one element per a pair of indices in `c_cdag_index_pairs`.
+"""
+function computegf(ed::EDCore,
+                   grid::FullTimeGrid,
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}})::
+                   Vector{TimeInvariantFullTimeGF{ComplexF64, true}}
+  map(c_cdag_index_pairs) do (c_index, cdag_index)
+    gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
+    _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+    gf
+  end
+end
+
+"""
+  Compute Green's function on a Keldysh contour with a decoupled initial thermal
+  state at inverse temperature β
+
+  This method returns a vector of scalar-valued `TimeInvariantKeldyshTimeGF`
+  objects, one element per a pair of indices in `c_cdag_index_pairs`.
+"""
+function computegf(ed::EDCore,
+                   grid::KeldyshTimeGrid,
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
+                   β::Float64)::
+                   Vector{TimeInvariantKeldyshTimeGF{ComplexF64, true}}
+  map(c_cdag_index_pairs) do (c_index, cdag_index)
+    gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
+    _computegf!(ed, gf, [c_index], [cdag_index], β)
+    gf
+  end
+end
+
+"""
+  Compute imaginary time Green's function
+
+  This method returns a vector of scalar-valued `ImaginaryTimeGF` objects,
+  one element per a pair of indices in `c_cdag_index_pairs`.
+"""
+function computegf(ed::EDCore,
+                   grid::ImaginaryTimeGrid,
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}})::
+                   Vector{ImaginaryTimeGF{ComplexF64, true}}
+  map(c_cdag_index_pairs) do (c_index, cdag_index)
+    gf = ImaginaryTimeGF(grid, 1, fermionic, true)
+    _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+    gf
+  end
+end
+
+#
+# Compute matrix-valued Green's functions
+#
+
+"""
+  Compute Green's function on a full 3-branch contour
+
+  This method returns a matrix-valued `TimeInvariantFullTimeGF` objects
+  constructed from a direct product of `c_indices` and `cdag_indices`.
+"""
+function computegf(ed::EDCore,
+                   grid::FullTimeGrid,
+                   c_indices::Vector{IndicesType},
+                   cdag_indices::Vector{IndicesType})::
+                   TimeInvariantFullTimeGF{ComplexF64, false}
+  norb = length(c_indices)
+  @assert norb == length(cdag_indices)
+  gf = TimeInvariantFullTimeGF(grid, norb)
+  _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β)
+  gf
+end
+
+"""
+  Compute Green's function on a Keldysh contour with a decoupled initial thermal
+  state at inverse temperature β
+
+  This method returns a matrix-valued `TimeInvariantKeldyshTimeGF` objects
+  constructed from a direct product of `c_indices` and `cdag_indices`.
+"""
+function computegf(ed::EDCore,
+                   grid::KeldyshTimeGrid,
                    c_indices::Vector{IndicesType},
                    cdag_indices::Vector{IndicesType},
-                   β = nothing)
-  c_cdag_index_pairs = [(i, j) for i in c_indices for j in cdag_indices]
-  reshape(computegf(ed, grid, c_cdag_index_pairs, β),
-          (length(c_indices), length(cdag_indices)))
+                   β::Float64)::
+                   TimeInvariantKeldyshTimeGF{ComplexF64, false}
+  norb = length(c_indices)
+  @assert norb == length(cdag_indices)
+  gf = TimeInvariantKeldyshTimeGF(grid, norb)
+  _computegf!(ed, gf, c_indices, cdag_indices, β)
+  gf
+end
+
+"""
+  Compute imaginary time Green's function
+
+  This method returns a matrix-valued `ImaginaryTimeGF` objects
+  constructed from a direct product of `c_indices` and `cdag_indices`.
+"""
+function computegf(ed::EDCore,
+                   grid::ImaginaryTimeGrid,
+                   c_indices::Vector{IndicesType},
+                   cdag_indices::Vector{IndicesType})::
+                   ImaginaryTimeGF{ComplexF64, false}
+  norb = length(c_indices)
+  @assert norb == length(cdag_indices)
+  gf = ImaginaryTimeGF(grid, norb)
+  _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β)
+  gf
 end

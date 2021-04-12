@@ -31,8 +31,8 @@ e_d = 1.0
 U = 2.0
 ε = [-0.5, 0, 0.5]
 V = [0.3, 0.3, 0.3]
-npts_real = 21
-npts_imag = 51
+nt = 21
+ntau = 51
 
 spins = ("down", "up")
 soi = SetOfIndices([[s, a] for s in spins for a in 0:length(ε)])
@@ -55,43 +55,78 @@ H = H_loc + H_bath + H_hyb
 # Diagonalization
 ed = EDCore(H, soi)
 
-# Keldysh contour and grid
-contour = twist(Contour(full_contour, tmax = tmax, β=β))
-grid = TimeGrid(contour, npts_real = npts_real, npts_imag = npts_imag)
+# Grids
+grid_full = FullTimeGrid(twist(FullContour(tmax = tmax, β=β)), nt, ntau)
+grid_keld = KeldyshTimeGrid(twist(KeldyshContour(tmax = tmax)), nt)
+grid_imag = ImaginaryTimeGrid(ImaginaryContour(β=β), ntau)
 
-gf = [computegf(ed, grid, IndicesType([s, 0])) for s in spins]
+d = IndicesType(["down", 0])
+u = IndicesType(["up", 0])
+
+function gf_is_approx(G1, G2, grid)
+  all(map(((t1, t2),) -> isapprox(G1[t1, t2], G2[t1, t2], atol=1e-10),
+          Iterators.product(grid, grid)))
+end
+
+#
+# Scalar GF
+#
+
+g_full_s = [computegf(ed, grid_full, d, d),
+            computegf(ed, grid_full, u, u)]
+g_keld_s = [computegf(ed, grid_keld, d, d, β),
+            computegf(ed, grid_keld, u, u, β)]
+g_imag_s = [computegf(ed, grid_imag, d, d),
+            computegf(ed, grid_imag, u, u)]
 
 test_dir = @__DIR__
 h5open(test_dir * "/GF.ref.h5", "r") do ref_file
   @test isapprox(ed.gs_energy, read(ref_file["gs_energy"]), atol = 1.e-8)
   for s = 1:2
-    gf_ref = read(ref_file["/gf/$(s-1)"], TimeGF)
-    @test gf[s].grid == gf_ref.grid
-    @test isapprox(gf[s].data, gf_ref.data, atol = 1e-8)
+    g_ref = read(ref_file["/gf/$(s-1)"], Keldysh.ALPSTimeGF).G
+
+    @test gf_is_approx(g_full_s[s], g_ref, g_full_s[s].grid)
+    # TODO: Cannot compare GFs defined on different contours
+    #@test gf_is_approx(g_keld_s[s], g_ref, g_keld_s[s].grid)
+    #@test gf_is_approx(g_imag_s[s], g_ref, g_imag_s[s].grid)
   end
 end
 
-# Test other methods of computegf()
-d = IndicesType(["down", 0])
-u = IndicesType(["up", 0])
+#
+# Matrix GF
+#
 
-@test computegf(ed, grid, [(d, d), (u, u)]) == gf
-@test computegf(ed, grid, [(d, d), (u, u)], β) == gf
+function test_gf_matrix_isapprox(G_matrix, G_scalar)
+  @test length(G_scalar) == norbitals(G_matrix)
+  grid = G_matrix.grid
+  for s = 1:length(G_scalar)
+    @test G_scalar[s].grid == grid
+    @test all(map(((t1, t2),) -> isapprox(G_scalar[s][t1, t2],
+                                          G_matrix[t1, t2][s, s],
+                                          atol=1e-10),
+                  Iterators.product(grid, grid)))
+  end
+end
 
-gf_matrix = computegf(ed, grid, [d,u], [d,u])
-@test gf_matrix[1,1] == gf[1]
-@test gf_matrix[1,2] == TimeGF((t1,t2) -> 0, grid)
-@test gf_matrix[2,1] == TimeGF((t1,t2) -> 0, grid)
-@test gf_matrix[2,2] == gf[2]
+test_gf_matrix_isapprox(computegf(ed, grid_full, [d, u], [d, u]), g_full_s)
+test_gf_matrix_isapprox(computegf(ed, grid_keld, [d, u], [d, u], β), g_keld_s)
+test_gf_matrix_isapprox(computegf(ed, grid_imag, [d, u], [d, u]), g_imag_s)
 
-gf_matrix = computegf(ed, grid, [d,u], [d,u], β)
-@test gf_matrix[1,1] == gf[1]
-@test gf_matrix[1,2] == TimeGF((t1,t2) -> 0, grid)
-@test gf_matrix[2,1] == TimeGF((t1,t2) -> 0, grid)
-@test gf_matrix[2,2] == gf[2]
+#
+# Lists of scalar GFs
+#
 
-# Attempt to call computegf() on a 2-branch contour and without β
-grid2 = TimeGrid(Contour(keldysh_contour, tmax = tmax), npts_real = npts_real)
-@test_throws DomainError computegf(ed, grid2, [d,u], [d,u])
+function test_gf_list_isapprox(G1, G2)
+  @test length(G1) == length(G2)
+  grid = G1[1].grid
+  for s = 1:length(G1)
+    @test G1[s].grid == G2[s].grid
+    @test gf_is_approx(G1[s], G2[s], grid)
+  end
+end
+
+test_gf_list_isapprox(computegf(ed, grid_full, [(d, d), (u, u)]), g_full_s)
+test_gf_list_isapprox(computegf(ed, grid_keld, [(d, d), (u, u)], β), g_keld_s)
+test_gf_list_isapprox(computegf(ed, grid_imag, [(d, d), (u, u)]), g_imag_s)
 
 end
