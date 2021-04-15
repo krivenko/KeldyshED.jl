@@ -16,6 +16,6 @@ branches:
     - travis
 
 before_script:
-  - julia -e "using Pkg; Pkg.add(PackageSpec(url=\"https://github.com/kleinhenz/Keldysh.jl.git\", rev=\"v0.5.1\"))"
+  - julia -e "using Pkg; Pkg.add(PackageSpec(url=\"https://github.com/kleinhenz/Keldysh.jl.git\", rev=\"v0.6.0\"))"
   - julia -e "using Pkg; Pkg.add(\"HDF5\")"
   - julia -e "using Pkg; Pkg.add(\"ArgParse\")"
