@@ -63,8 +63,8 @@ grid_imag = ImaginaryTimeGrid(ImaginaryContour(β=β), ntau)
 d = IndicesType(["down", 0])
 u = IndicesType(["up", 0])
 
-function gf_is_approx(G1, G2, grid)
-  all(map(((t1, t2),) -> isapprox(G1[t1, t2], G2[t1, t2], atol=1e-10),
+function gf_is_approx(f1, f2, grid)
+  all(map(((t1, t2),) -> isapprox(f1(t1, t2), f2(t1, t2), atol=1e-10),
           Iterators.product(grid, grid)))
 end
 
@@ -85,10 +85,15 @@ h5open(test_dir * "/GF.ref.h5", "r") do ref_file
   for s = 1:2
     g_ref = read(ref_file["/gf/$(s-1)"], Keldysh.ALPSTimeGF).G
 
-    @test gf_is_approx(g_full_s[s], g_ref, g_full_s[s].grid)
-    # TODO: Cannot compare GFs defined on different contours
-    #@test gf_is_approx(g_keld_s[s], g_ref, g_keld_s[s].grid)
-    #@test gf_is_approx(g_imag_s[s], g_ref, g_imag_s[s].grid)
+    @test gf_is_approx((t1, t2) -> g_full_s[s][t1, t2],
+                       (t1, t2) -> g_ref[t1, t2],
+                       g_full_s[s].grid)
+    @test gf_is_approx((t1, t2) -> g_keld_s[s][t1, t2],
+                       (t1, t2) -> g_ref(t1.val, t2.val),
+                       g_keld_s[s].grid)
+    @test gf_is_approx((t1, t2) -> g_imag_s[s][t1, t2],
+                       (t1, t2) -> g_ref(t1.val, t2.val),
+                       g_imag_s[s].grid)
   end
 end
 
@@ -101,10 +106,9 @@ function test_gf_matrix_isapprox(G_matrix, G_scalar)
   grid = G_matrix.grid
   for s = 1:length(G_scalar)
     @test G_scalar[s].grid == grid
-    @test all(map(((t1, t2),) -> isapprox(G_scalar[s][t1, t2],
-                                          G_matrix[t1, t2][s, s],
-                                          atol=1e-10),
-                  Iterators.product(grid, grid)))
+    @test gf_is_approx((t1, t2) -> G_scalar[s][t1, t2],
+                       (t1, t2) -> G_matrix[t1, t2][s, s],
+                       grid)
   end
 end
 
@@ -121,7 +125,9 @@ function test_gf_list_isapprox(G1, G2)
   grid = G1[1].grid
   for s = 1:length(G1)
     @test G1[s].grid == G2[s].grid
-    @test gf_is_approx(G1[s], G2[s], grid)
+    @test gf_is_approx((t1, t2) -> G1[s][t1, t2],
+                       (t1, t2) -> G2[s][t1, t2],
+                       grid)
   end
 end
 
