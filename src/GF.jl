@@ -40,7 +40,16 @@ function _computegf!(ed::EDCore,
               for (cdag_n, cdag_index) in enumerate(cdag_indices)
               for (t1, t2) in D.points]
 
-  @sync @distributed for job = 1:length(all_jobs)
+  njobs = length(all_jobs)
+
+  # Transfer computed matrix elements to process id 1
+  # as (t1, t2, c_n, cdag_n, value) tuples
+  gf_element_channel = RemoteChannel(
+    ()->Channel{Tuple{TimeGridPoint,TimeGridPoint,Int,Int,ComplexF64}}(njobs),
+    1
+  )
+
+  @sync @distributed for job = 1:njobs
     (c_n, c_index), (cdag_n, cdag_index), (t1, t2) = all_jobs[job]
 
     greater = heaviside(t1.val, t2.val)
@@ -76,6 +85,16 @@ function _computegf!(ed::EDCore,
       left_mat = left_mat * inner_exp
       val += tr(ρ[outer_sp] * left_mat * right_mat)
     end
+
+    put!(gf_element_channel, (t1, t2, c_n, cdag_n, val))
+  end
+
+  close(gf_element_channel)
+
+  # Extract all computed elements from the channel
+  for i=1:njobs
+    t1, t2, c_n, cdag_n, val = take!(gf_element_channel)
+    greater = heaviside(t1.val, t2.val)
     if scalar
       gf[t1, t2] = (greater ? -1im : 1im) * val
     else
@@ -84,7 +103,6 @@ function _computegf!(ed::EDCore,
       val_mat[c_n, cdag_n] = (greater ? -1im : 1im) * val
       gf[t1, t2] += val_mat
     end
-    # TODO: Reduction over workers
   end
 end
 
