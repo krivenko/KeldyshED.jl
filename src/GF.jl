@@ -52,8 +52,9 @@ function _computegf!(ed::EDCore,
   @sync @distributed for job = 1:njobs
     (c_n, c_index), (cdag_n, cdag_index), (t1, t2) = all_jobs[job]
 
-    greater = heaviside(t1.val, t2.val)
-    Δt = greater ? (t1.val.val - t2.val.val) : (t2.val.val - t1.val.val)
+    greater = heaviside(t1.bpoint, t2.bpoint)
+    Δt = greater ? (t1.bpoint.val - t2.bpoint.val) :
+                   (t2.bpoint.val - t1.bpoint.val)
 
     left_conn_f = greater ? (sp) -> c_connection(ed, c_index, sp) :
                             (sp) -> cdag_connection(ed, cdag_index, sp)
@@ -94,15 +95,8 @@ function _computegf!(ed::EDCore,
   # Extract all computed elements from the channel
   for i=1:njobs
     t1, t2, c_n, cdag_n, val = take!(gf_element_channel)
-    greater = heaviside(t1.val, t2.val)
-    if scalar
-      gf[t1, t2] = (greater ? -1im : 1im) * val
-    else
-      # A bit hacky ...
-      val_mat = zeros(T, norb, norb)
-      val_mat[c_n, cdag_n] = (greater ? -1im : 1im) * val
-      gf[t1, t2] += val_mat
-    end
+    greater = heaviside(t1.bpoint, t2.bpoint)
+    gf[c_n, cdag_n, t1, t2] = (greater ? -1im : 1im) * val
   end
 end
 

@@ -89,10 +89,10 @@ h5open(test_dir * "/GF.ref.h5", "r") do ref_file
                        (t1, t2) -> g_ref[t1, t2],
                        g_full_s[s].grid)
     @test gf_is_approx((t1, t2) -> g_keld_s[s][t1, t2],
-                       (t1, t2) -> g_ref(t1.val, t2.val),
+                       (t1, t2) -> g_ref(t1.bpoint, t2.bpoint),
                        g_keld_s[s].grid)
     @test gf_is_approx((t1, t2) -> g_imag_s[s][t1, t2],
-                       (t1, t2) -> g_ref(t1.val, t2.val),
+                       (t1, t2) -> g_ref(t1.bpoint, t2.bpoint),
                        g_imag_s[s].grid)
   end
 end
