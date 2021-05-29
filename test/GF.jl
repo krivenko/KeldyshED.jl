@@ -22,6 +22,7 @@ using KeldyshED.Hilbert
 using KeldyshED: EDCore, computegf
 using HDF5
 using Test
+using Distributed
 
 @testset "computegf(): 3 bath sites" begin
 
@@ -68,16 +69,18 @@ function gf_is_approx(f1, f2, grid)
           Iterators.product(grid, grid)))
 end
 
+gf_filler = nprocs() > 1 ? DistributedGFFiller() : SerialGFFiller()
+
 #
 # Scalar GF
 #
 
-g_full_s = [computegf(ed, grid_full, d, d),
-            computegf(ed, grid_full, u, u)]
-g_keld_s = [computegf(ed, grid_keld, d, d, β),
-            computegf(ed, grid_keld, u, u, β)]
-g_imag_s = [computegf(ed, grid_imag, d, d),
-            computegf(ed, grid_imag, u, u)]
+g_full_s = [computegf(ed, grid_full, d, d, gf_filler),
+            computegf(ed, grid_full, u, u, gf_filler)]
+g_keld_s = [computegf(ed, grid_keld, d, d, β, gf_filler),
+            computegf(ed, grid_keld, u, u, β, gf_filler)]
+g_imag_s = [computegf(ed, grid_imag, d, d, gf_filler),
+            computegf(ed, grid_imag, u, u, gf_filler)]
 
 test_dir = @__DIR__
 h5open(test_dir * "/GF.ref.h5", "r") do ref_file
@@ -112,9 +115,18 @@ function test_gf_matrix_isapprox(G_matrix, G_scalar)
   end
 end
 
-test_gf_matrix_isapprox(computegf(ed, grid_full, [d, u], [d, u]), g_full_s)
-test_gf_matrix_isapprox(computegf(ed, grid_keld, [d, u], [d, u], β), g_keld_s)
-test_gf_matrix_isapprox(computegf(ed, grid_imag, [d, u], [d, u]), g_imag_s)
+test_gf_matrix_isapprox(
+  computegf(ed, grid_full, [d, u], [d, u], gf_filler),
+  g_full_s
+)
+test_gf_matrix_isapprox(
+  computegf(ed, grid_keld, [d, u], [d, u], β, gf_filler),
+  g_keld_s
+)
+test_gf_matrix_isapprox(
+  computegf(ed, grid_imag, [d, u], [d, u], gf_filler),
+  g_imag_s
+)
 
 #
 # Lists of scalar GFs
@@ -131,8 +143,17 @@ function test_gf_list_isapprox(G1, G2)
   end
 end
 
-test_gf_list_isapprox(computegf(ed, grid_full, [(d, d), (u, u)]), g_full_s)
-test_gf_list_isapprox(computegf(ed, grid_keld, [(d, d), (u, u)], β), g_keld_s)
-test_gf_list_isapprox(computegf(ed, grid_imag, [(d, d), (u, u)]), g_imag_s)
+test_gf_list_isapprox(
+  computegf(ed, grid_full, [(d, d), (u, u)], gf_filler),
+  g_full_s
+)
+test_gf_list_isapprox(
+  computegf(ed, grid_keld, [(d, d), (u, u)], β, gf_filler),
+  g_keld_s
+)
+test_gf_list_isapprox(
+  computegf(ed, grid_imag, [(d, d), (u, u)], gf_filler),
+  g_imag_s
+)
 
 end

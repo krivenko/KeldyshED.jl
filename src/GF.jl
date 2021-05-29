@@ -21,82 +21,138 @@ using Keldysh
 using LinearAlgebra: Diagonal, tr
 using Distributed
 
-export computegf
+export computegf, SerialGFFiller, DistributedGFFiller
+
+"""
+  Compute Green's function element at times t1, t2 for given indices of
+  creation/annihilation operators
+"""
+function computegf(ed::EDCore,
+                   t1::BranchPoint,
+                   t2::BranchPoint,
+                   c_index::IndicesType,
+                   cdag_index::IndicesType,
+                   β::Float64)::ComplexF64
+  computegf(ed,
+            energies(ed),
+            density_matrix(ed, β),
+            t1,
+            t2,
+            c_index,
+            cdag_index
+  )
+end
+
+"""
+  Compute Green's function element at times t1, t2 for given indices of
+  creation/annihilation operators
+
+  This method is optimized for the case where the density matrix has already
+  been computed.
+"""
+function computegf(ed::EDCore,
+                   en,
+                   ρ,
+                   t1::BranchPoint,
+                   t2::BranchPoint,
+                   c_index::IndicesType,
+                   cdag_index::IndicesType)::ComplexF64
+
+  greater = heaviside(t1, t2)
+  Δt = greater ? (t1.val - t2.val) : (t2.val - t1.val)
+
+  left_conn_f = greater ? (sp) -> c_connection(ed, c_index, sp) :
+                          (sp) -> cdag_connection(ed, cdag_index, sp)
+  right_conn_f = greater ? (sp) -> cdag_connection(ed, cdag_index, sp) :
+                           (sp) -> c_connection(ed, c_index, sp)
+
+  left_mat_f = greater ? (sp) -> c_matrix(ed, c_index, sp) :
+                         (sp) -> cdag_matrix(ed, cdag_index, sp)
+  right_mat_f = greater ? (sp) -> cdag_matrix(ed, cdag_index, sp) :
+                          (sp) -> c_matrix(ed, c_index, sp)
+
+  val::ComplexF64 = 0
+  for outer_sp = 1:length(ed.subspaces)
+    inner_sp = right_conn_f(outer_sp)
+    isnothing(inner_sp) && continue
+    left_conn_f(inner_sp) != outer_sp && continue
+
+    # Eigenvalues in outer and inner subspaces
+    outer_energies = en[outer_sp]
+    inner_energies = en[inner_sp]
+
+    right_mat = right_mat_f(outer_sp)
+    outer_exp = Diagonal(exp.(1im * outer_energies * Δt))
+    right_mat = right_mat * outer_exp
+
+    left_mat = left_mat_f(inner_sp)
+    inner_exp = Diagonal(exp.(-1im * inner_energies * Δt))
+
+    left_mat = left_mat * inner_exp
+    val += tr(ρ[outer_sp] * left_mat * right_mat)
+  end
+  (greater ? -1im : 1im) * val
+end
+
+# Filler objects
+abstract type AbstractGFFiller end
+
+struct SerialGFFiller <: AbstractGFFiller end
+function (::SerialGFFiller)(f::Function,
+                            gf::AbstractTimeGF{T, scalar},
+                            element_list) where {T <: Number, scalar}
+  for ((c_n, c_index), (cdag_n, cdag_index), (t1, t2)) in element_list
+    gf[c_n, cdag_n, t1, t2] = f(t1.bpoint, t2.bpoint, c_index, cdag_index)
+  end
+end
+
+struct DistributedGFFiller <: AbstractGFFiller end
+function (::DistributedGFFiller)(f::Function,
+                                 gf::AbstractTimeGF{T, scalar},
+                                 element_list) where {T <: Number, scalar}
+    all_jobs = collect(element_list)
+    njobs = length(all_jobs)
+
+    # Transfer computed matrix elements to process id 1
+    # as (t1, t2, c_n, cdag_n, value) tuples
+    gf_element_channel = RemoteChannel(
+      ()->Channel{Tuple{TimeGridPoint,TimeGridPoint,Int,Int,ComplexF64}}(njobs),
+      1
+    )
+
+    @distributed for job = 1:njobs
+      (c_n, c_index), (cdag_n, cdag_index), (t1, t2) = all_jobs[job]
+      val = f(t1.bpoint, t2.bpoint, c_index, cdag_index)
+      put!(gf_element_channel, (t1, t2, c_n, cdag_n, val))
+    end
+
+    # Extract all computed elements from the channel
+    for i = 1:njobs
+      t1, t2, c_n, cdag_n, val = take!(gf_element_channel)
+      gf[c_n, cdag_n, t1, t2] = val
+    end
+
+    close(gf_element_channel)
+end
 
 function _computegf!(ed::EDCore,
                      gf::AbstractTimeGF{T, scalar},
                      c_indices::Vector{IndicesType},
                      cdag_indices::Vector{IndicesType},
-                     β::Float64) where {T <: Number, scalar}
+                     β::Float64,
+                     gf_filler::AbstractGFFiller) where {T <: Number, scalar}
 
   en = energies(ed)
   ρ = density_matrix(ed, β)
 
-  norb = norbitals(gf)
-  D = TimeDomain(gf)
-
-  all_jobs = [((c_n, c_index), (cdag_n, cdag_index), (t1, t2))
-              for (c_n, c_index) in enumerate(c_indices)
-              for (cdag_n, cdag_index) in enumerate(cdag_indices)
-              for (t1, t2) in D.points]
-
-  njobs = length(all_jobs)
-
-  # Transfer computed matrix elements to process id 1
-  # as (t1, t2, c_n, cdag_n, value) tuples
-  gf_element_channel = RemoteChannel(
-    ()->Channel{Tuple{TimeGridPoint,TimeGridPoint,Int,Int,ComplexF64}}(njobs),
-    1
+  element_list = Iterators.product(
+    enumerate(c_indices),
+    enumerate(cdag_indices),
+    TimeDomain(gf).points
   )
 
-  @sync @distributed for job = 1:njobs
-    (c_n, c_index), (cdag_n, cdag_index), (t1, t2) = all_jobs[job]
-
-    greater = heaviside(t1.bpoint, t2.bpoint)
-    Δt = greater ? (t1.bpoint.val - t2.bpoint.val) :
-                   (t2.bpoint.val - t1.bpoint.val)
-
-    left_conn_f = greater ? (sp) -> c_connection(ed, c_index, sp) :
-                            (sp) -> cdag_connection(ed, cdag_index, sp)
-    right_conn_f = greater ? (sp) -> cdag_connection(ed, cdag_index, sp) :
-                             (sp) -> c_connection(ed, c_index, sp)
-
-    left_mat_f = greater ? (sp) -> c_matrix(ed, c_index, sp) :
-                           (sp) -> cdag_matrix(ed, cdag_index, sp)
-    right_mat_f = greater ? (sp) -> cdag_matrix(ed, cdag_index, sp) :
-                            (sp) -> c_matrix(ed, c_index, sp)
-
-    val::ComplexF64 = 0
-    for outer_sp = 1:length(ed.subspaces)
-      inner_sp = right_conn_f(outer_sp)
-      isnothing(inner_sp) && continue
-      left_conn_f(inner_sp) != outer_sp && continue
-
-      # Eigenvalues in outer and inner subspaces
-      outer_energies = en[outer_sp]
-      inner_energies = en[inner_sp]
-
-      right_mat = right_mat_f(outer_sp)
-      outer_exp = Diagonal(exp.(1im * outer_energies * Δt))
-      right_mat = right_mat * outer_exp
-
-      left_mat = left_mat_f(inner_sp)
-      inner_exp = Diagonal(exp.(-1im * inner_energies * Δt))
-
-      left_mat = left_mat * inner_exp
-      val += tr(ρ[outer_sp] * left_mat * right_mat)
-    end
-
-    put!(gf_element_channel, (t1, t2, c_n, cdag_n, val))
-  end
-
-  close(gf_element_channel)
-
-  # Extract all computed elements from the channel
-  for i=1:njobs
-    t1, t2, c_n, cdag_n, val = take!(gf_element_channel)
-    greater = heaviside(t1.bpoint, t2.bpoint)
-    gf[c_n, cdag_n, t1, t2] = (greater ? -1im : 1im) * val
+  gf_filler(gf, element_list) do t1, t2, c_index, cdag_index
+    computegf(ed, en, ρ, t1, t2, c_index, cdag_index)
   end
 end
 
@@ -112,10 +168,11 @@ end
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
                    c_index::IndicesType,
-                   cdag_index::IndicesType)::
+                   cdag_index::IndicesType,
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantFullTimeGF{ComplexF64, true}
   gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
-  _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+  _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
   gf
 end
 
@@ -129,10 +186,11 @@ function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
                    c_index::IndicesType,
                    cdag_index::IndicesType,
-                   β::Float64)::
+                   β::Float64,
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantKeldyshTimeGF{ComplexF64, true}
   gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
-  _computegf!(ed, gf, [c_index], [cdag_index], β)
+  _computegf!(ed, gf, [c_index], [cdag_index], β, gf_filler)
   gf
 end
 
@@ -144,10 +202,11 @@ end
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
                    c_index::IndicesType,
-                   cdag_index::IndicesType)::
+                   cdag_index::IndicesType,
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    ImaginaryTimeGF{ComplexF64, true}
   gf = ImaginaryTimeGF(grid, 1, fermionic, true)
-  _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+  _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
   gf
 end
 
@@ -163,11 +222,12 @@ end
 """
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}})::
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{TimeInvariantFullTimeGF{ComplexF64, true}}
   map(c_cdag_index_pairs) do (c_index, cdag_index)
     gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
-    _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+    _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
     gf
   end
 end
@@ -182,11 +242,12 @@ end
 function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
                    c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
-                   β::Float64)::
+                   β::Float64,
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{TimeInvariantKeldyshTimeGF{ComplexF64, true}}
   map(c_cdag_index_pairs) do (c_index, cdag_index)
     gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
-    _computegf!(ed, gf, [c_index], [cdag_index], β)
+    _computegf!(ed, gf, [c_index], [cdag_index], β, gf_filler)
     gf
   end
 end
@@ -199,11 +260,12 @@ end
 """
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}})::
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{ImaginaryTimeGF{ComplexF64, true}}
   map(c_cdag_index_pairs) do (c_index, cdag_index)
     gf = ImaginaryTimeGF(grid, 1, fermionic, true)
-    _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β)
+    _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
     gf
   end
 end
@@ -221,12 +283,13 @@ end
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
                    c_indices::Vector{IndicesType},
-                   cdag_indices::Vector{IndicesType})::
+                   cdag_indices::Vector{IndicesType},
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantFullTimeGF{ComplexF64, false}
   norb = length(c_indices)
   @assert norb == length(cdag_indices)
   gf = TimeInvariantFullTimeGF(grid, norb)
-  _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β)
+  _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β, gf_filler)
   gf
 end
 
@@ -241,12 +304,13 @@ function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
                    c_indices::Vector{IndicesType},
                    cdag_indices::Vector{IndicesType},
-                   β::Float64)::
+                   β::Float64,
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantKeldyshTimeGF{ComplexF64, false}
   norb = length(c_indices)
   @assert norb == length(cdag_indices)
   gf = TimeInvariantKeldyshTimeGF(grid, norb)
-  _computegf!(ed, gf, c_indices, cdag_indices, β)
+  _computegf!(ed, gf, c_indices, cdag_indices, β, gf_filler)
   gf
 end
 
@@ -259,11 +323,12 @@ end
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
                    c_indices::Vector{IndicesType},
-                   cdag_indices::Vector{IndicesType})::
+                   cdag_indices::Vector{IndicesType},
+                   gf_filler::AbstractGFFiller = SerialGFFiller())::
                    ImaginaryTimeGF{ComplexF64, false}
   norb = length(c_indices)
   @assert norb == length(cdag_indices)
   gf = ImaginaryTimeGF(grid, norb)
-  _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β)
+  _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β, gf_filler)
   gf
 end
