@@ -34,12 +34,12 @@ function computegf(ed::EDCore,
                    cdag_index::IndicesType,
                    β::Float64)::ComplexF64
   computegf(ed,
-            energies(ed),
-            density_matrix(ed, β),
             t1,
             t2,
             c_index,
-            cdag_index
+            cdag_index,
+            en = energies(ed),
+            ρ = density_matrix(ed, β)
   )
 end
 
@@ -51,12 +51,12 @@ end
   been computed.
 """
 function computegf(ed::EDCore,
-                   en,
-                   ρ,
                    t1::BranchPoint,
                    t2::BranchPoint,
                    c_index::IndicesType,
-                   cdag_index::IndicesType)::ComplexF64
+                   cdag_index::IndicesType;
+                   en,
+                   ρ)::ComplexF64
 
   greater = heaviside(t1, t2)
   Δt = greater ? (t1.val - t2.val) : (t2.val - t1.val)
@@ -152,7 +152,7 @@ function _computegf!(ed::EDCore,
   )
 
   gf_filler(gf, element_list) do t1, t2, c_index, cdag_index
-    computegf(ed, en, ρ, t1, t2, c_index, cdag_index)
+    computegf(ed, t1, t2, c_index, cdag_index, en = en, ρ = ρ)
   end
 end
 
