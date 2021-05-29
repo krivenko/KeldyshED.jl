@@ -168,7 +168,7 @@ end
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
                    c_index::IndicesType,
-                   cdag_index::IndicesType,
+                   cdag_index::IndicesType;
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantFullTimeGF{ComplexF64, true}
   gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
@@ -186,7 +186,7 @@ function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
                    c_index::IndicesType,
                    cdag_index::IndicesType,
-                   β::Float64,
+                   β::Float64;
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantKeldyshTimeGF{ComplexF64, true}
   gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
@@ -202,7 +202,7 @@ end
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
                    c_index::IndicesType,
-                   cdag_index::IndicesType,
+                   cdag_index::IndicesType;
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    ImaginaryTimeGF{ComplexF64, true}
   gf = ImaginaryTimeGF(grid, 1, fermionic, true)
@@ -222,7 +222,7 @@ end
 """
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}};
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{TimeInvariantFullTimeGF{ComplexF64, true}}
   map(c_cdag_index_pairs) do (c_index, cdag_index)
@@ -242,7 +242,7 @@ end
 function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
                    c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
-                   β::Float64,
+                   β::Float64;
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{TimeInvariantKeldyshTimeGF{ComplexF64, true}}
   map(c_cdag_index_pairs) do (c_index, cdag_index)
@@ -260,7 +260,7 @@ end
 """
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
-                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}},
+                   c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}};
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{ImaginaryTimeGF{ComplexF64, true}}
   map(c_cdag_index_pairs) do (c_index, cdag_index)
@@ -283,7 +283,7 @@ end
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
                    c_indices::Vector{IndicesType},
-                   cdag_indices::Vector{IndicesType},
+                   cdag_indices::Vector{IndicesType};
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantFullTimeGF{ComplexF64, false}
   norb = length(c_indices)
@@ -304,7 +304,7 @@ function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
                    c_indices::Vector{IndicesType},
                    cdag_indices::Vector{IndicesType},
-                   β::Float64,
+                   β::Float64;
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    TimeInvariantKeldyshTimeGF{ComplexF64, false}
   norb = length(c_indices)
@@ -323,7 +323,7 @@ end
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
                    c_indices::Vector{IndicesType},
-                   cdag_indices::Vector{IndicesType},
+                   cdag_indices::Vector{IndicesType};
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    ImaginaryTimeGF{ComplexF64, false}
   norb = length(c_indices)

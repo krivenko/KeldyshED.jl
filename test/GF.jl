@@ -75,12 +75,12 @@ gf_filler = nprocs() > 1 ? DistributedGFFiller() : SerialGFFiller()
 # Scalar GF
 #
 
-g_full_s = [computegf(ed, grid_full, d, d, gf_filler),
-            computegf(ed, grid_full, u, u, gf_filler)]
-g_keld_s = [computegf(ed, grid_keld, d, d, β, gf_filler),
-            computegf(ed, grid_keld, u, u, β, gf_filler)]
-g_imag_s = [computegf(ed, grid_imag, d, d, gf_filler),
-            computegf(ed, grid_imag, u, u, gf_filler)]
+g_full_s = [computegf(ed, grid_full, d, d, gf_filler = gf_filler),
+            computegf(ed, grid_full, u, u, gf_filler = gf_filler)]
+g_keld_s = [computegf(ed, grid_keld, d, d, β, gf_filler = gf_filler),
+            computegf(ed, grid_keld, u, u, β, gf_filler = gf_filler)]
+g_imag_s = [computegf(ed, grid_imag, d, d, gf_filler = gf_filler),
+            computegf(ed, grid_imag, u, u, gf_filler = gf_filler)]
 
 test_dir = @__DIR__
 h5open(test_dir * "/GF.ref.h5", "r") do ref_file
@@ -116,15 +116,15 @@ function test_gf_matrix_isapprox(G_matrix, G_scalar)
 end
 
 test_gf_matrix_isapprox(
-  computegf(ed, grid_full, [d, u], [d, u], gf_filler),
+  computegf(ed, grid_full, [d, u], [d, u], gf_filler = gf_filler),
   g_full_s
 )
 test_gf_matrix_isapprox(
-  computegf(ed, grid_keld, [d, u], [d, u], β, gf_filler),
+  computegf(ed, grid_keld, [d, u], [d, u], β, gf_filler = gf_filler),
   g_keld_s
 )
 test_gf_matrix_isapprox(
-  computegf(ed, grid_imag, [d, u], [d, u], gf_filler),
+  computegf(ed, grid_imag, [d, u], [d, u], gf_filler = gf_filler),
   g_imag_s
 )
 
@@ -144,15 +144,15 @@ function test_gf_list_isapprox(G1, G2)
 end
 
 test_gf_list_isapprox(
-  computegf(ed, grid_full, [(d, d), (u, u)], gf_filler),
+  computegf(ed, grid_full, [(d, d), (u, u)], gf_filler = gf_filler),
   g_full_s
 )
 test_gf_list_isapprox(
-  computegf(ed, grid_keld, [(d, d), (u, u)], β, gf_filler),
+  computegf(ed, grid_keld, [(d, d), (u, u)], β, gf_filler = gf_filler),
   g_keld_s
 )
 test_gf_list_isapprox(
-  computegf(ed, grid_imag, [(d, d), (u, u)], gf_filler),
+  computegf(ed, grid_imag, [(d, d), (u, u)], gf_filler = gf_filler),
   g_imag_s
 )
 
