@@ -1,7 +1,7 @@
 name = "KeldyshED"
 uuid = "675b6b9c-7c2f-11e9-3bf3-dfd4d61640f7"
 authors = ["Igor Krivenko <igor.s.krivenko@gmail.com>"]
-version = "0.6.0"
+version = "0.6.1"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
