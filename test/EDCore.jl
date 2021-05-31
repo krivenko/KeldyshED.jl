@@ -276,6 +276,51 @@ for (indices1, n1) in soi
   end
 end
 
+# operator_blocks()
+
+# Check the case of one-monomial operators
+let op_one_term = RealOperatorExpr()
+  for o1=1:n_orb, o2=1:n_orb
+    op_one_term = (o1 + o2) * c_dag("up", o1) * c("dn", o2)
+    mon = Operators.Monomial([
+      Operators.CanonicalOperator(true, IndicesType(["up", o1])),
+      Operators.CanonicalOperator(false, IndicesType(["dn", o2]))
+    ])
+
+    for j=1:n_subspaces
+      blocks = operator_blocks(ed, op_one_term, j)
+      i = monomial_connection(ed, mon, j)
+      if i == nothing
+        @test isempty(blocks)
+      else
+        @test length(blocks) == 1
+        @test blocks[i] ≈ (o1 + o2) * monomial_matrix(ed, mon, j)
+      end
+    end
+  end
+end
+
+# Check that both methods of operator_blocks() give equivalent results
+let op = ComplexOperatorExpr()
+  for o1=1:n_orb, o2=1:n_orb
+    op += 1im * (o1 + o2) * c_dag("up", o1; scalar_type = ComplexF64) *
+                            c("dn", o2; scalar_type = ComplexF64)
+  end
+
+  blocks_ref2 = Dict{Tuple{Int64,Int64},Matrix{ComplexF64}}()
+
+  for j=1:n_subspaces
+    blocks = operator_blocks(ed, op, j)
+
+    # Fill blocks_ref2
+    for (i, mat) in blocks
+      blocks_ref2[(i, j)] = mat
+    end
+  end
+
+  @test operator_blocks(ed, op) == blocks_ref2
+end
+
 end
 
 @testset "EDCore: 7-orbital Hubbard-Kanamori atom" begin

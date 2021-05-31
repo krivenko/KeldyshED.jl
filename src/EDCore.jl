@@ -25,6 +25,7 @@ export EDCore
 export fock_states, energies, unitary_matrices
 export c_connection, cdag_connection, c_matrix, cdag_matrix
 export monomial_connection, monomial_matrix
+export operator_blocks
 export partition_function, density_matrix
 
 """Eigensystem within one invariant subspace of the Hamiltonian"""
@@ -340,6 +341,68 @@ function monomial_matrix(ed::EDCore{ScalarType},
     sp = new_sp
   end
   mat
+end
+
+#####################
+# operator_blocks() #
+#####################
+
+"""
+  Compute blocks of the matrix representation of an operator acting on states
+  in a given (initial) subspace
+
+  The computed blocks are returned as a dictionary `final subspace index =>
+  matrix`.
+"""
+function operator_blocks(ed::EDCore{EDScalarType},
+                         op::OperatorExpr{OPScalarType},
+                         sp_index::Int) where {EDScalarType <: Number,
+                                               OPScalarType <: Number}
+  ScalarType = promote_type(EDScalarType, OPScalarType)
+  d = Dict{Int64,Matrix{ScalarType}}()
+  for (mon, coeff) in op
+    sp = monomial_connection(ed, mon, sp_index)
+    if sp != nothing
+      mat = coeff * monomial_matrix(ed, mon, sp_index)
+      if sp in keys(d)
+        d[sp] += mat
+        isapprox(LinearAlgebra.norm(d[sp]), 0) && delete!(d, sp)
+      else
+        d[sp] = mat
+      end
+    end
+  end
+  d
+end
+
+"""
+  Compute blocks of the matrix representation of an operator
+
+  The computed blocks are returned as a dictionary
+  `(initial subspace index, final subspace index) => matrix`.
+"""
+function operator_blocks(ed::EDCore{EDScalarType},
+                         op::OperatorExpr{OPScalarType}
+                         ) where {EDScalarType <: Number,
+                                  OPScalarType <: Number}
+  ScalarType = promote_type(EDScalarType, OPScalarType)
+  d = Dict{Tuple{Int64,Int64},Matrix{ScalarType}}()
+  for (mon, coeff) in op
+    for j = 1:length(ed.subspaces)
+      i = monomial_connection(ed, mon, j)
+      if i != nothing
+        mat = coeff * monomial_matrix(ed, mon, j)
+        key = (i, j)
+        if key in keys(d)
+          d[key] += mat
+          isapprox(LinearAlgebra.norm(d[key]), 0) && delete!(d, key)
+        else
+          d[key] = mat
+        end
+      end
+    end
+  end
+  d
 end
 
 ###################
