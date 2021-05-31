@@ -20,7 +20,7 @@ using KeldyshED.Operators
 using KeldyshED.Hilbert
 using KeldyshED
 using Test
-using LinearAlgebra: Diagonal
+using LinearAlgebra: I, Diagonal
 
 function make_hamiltonian(n_orb, mu, U, J)
   soi = SetOfIndices([[s,o] for s in ("up","dn") for o = 1:n_orb])
@@ -92,39 +92,39 @@ for i=1:n_subspaces
 end
 
 # unitary_matrices()
-I = hcat(1) # identity matrix 1x1
-u_mat_ref = Matrix{Float64}[I, I, I,
+Id = hcat(1) # identity matrix 1x1
+u_mat_ref = Matrix{Float64}[Id, Id, Id,
 [0.7071067812 0.7071067812; -0.7071067812 0.7071067812],
 [0.7071067812 0.7071067812; -0.7071067812 0.7071067812],
 [0.7071067812 0.7071067812; -0.7071067812 0.7071067812],
-I, I, I, I, I, I, I, I, I, I,
+Id, Id, Id, Id, Id, Id, Id, Id, Id, Id,
 [-0.5773502692 0.7071067812 0.4082482905;
   0.5773502692 0.7071067812 -0.4082482905;
  -0.5773502692 0 -0.8164965809],
 [-0.5773502692 0.7071067812 0.4082482905;
   0.5773502692 0.7071067812 -0.4082482905;
  -0.5773502692 0 -0.8164965809],
-I,
+Id,
 [-0.1685467429 -0.7989109225 -0.5773502692;
  -0.6076037828 0.5454212223 -0.5773502692;
   0.7761505257 0.2534897002 -0.5773502692],
-I,
+Id,
 [-0.7071067812 -0.7071067812; -0.7071067812 0.7071067812],
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
 [-0.7071067812 -0.7071067812; -0.7071067812 0.7071067812],
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
-I, I,
+Id, Id,
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
-I,
+Id,
 [-0.7071067812 0.7071067812; 0.7071067812 0.7071067812],
-I, I, I,
+Id, Id, Id,
 [ 0.4082482905 0.7071067812 0.5773502692;
   0.4082482905 -0.7071067812 0.5773502692;
  -0.8164965809 0 0.5773502692],
-I, I, I, I, I, I, I]
+Id, Id, Id, Id, Id, Id, Id]
 
 u_mat = unitary_matrices(ed)
 for i=1:n_subspaces
@@ -244,6 +244,35 @@ for (indices, n) in soi
 
     n_mat_ref = Diagonal([digits(fs,base=2,pad=64)[n] for fs in basis[i]])
     @test isapprox(n_mat, n_mat_ref, atol = 1e-8)
+  end
+end
+
+# monomial_matrix()
+
+# Constant monomial
+let m = Operators.Monomial()
+  for i=1:n_subspaces
+    sp_dim = length(ed.subspaces[i])
+    @test monomial_matrix(ed, m, i) == Matrix{Float64}(I, sp_dim, sp_dim)
+  end
+end
+# Quadratic monomial
+for (indices1, n1) in soi
+  for (indices2, n2) in soi
+    let m = Operators.Monomial([Operators.CanonicalOperator(true, indices1),
+                                Operators.CanonicalOperator(false, indices2)])
+      for i=1:n_subspaces
+        j = c_connection(ed, indices2, i)
+        k = cdag_connection(ed, indices1, j)
+        if j == nothing || k == nothing
+          @test_throws DomainError monomial_matrix(ed, m, i)
+        else
+          mat_ref = cdag_matrix(ed, indices1, j) * c_matrix(ed, indices2, i)
+          mat = monomial_matrix(ed, m, i)
+          @test isapprox(mat, mat_ref, atol = 1e-8)
+        end
+      end
+    end
   end
 end
 

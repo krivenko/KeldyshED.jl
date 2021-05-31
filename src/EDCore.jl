@@ -24,7 +24,7 @@ using SparseArrays
 export EDCore
 export fock_states, energies, unitary_matrices
 export c_connection, cdag_connection, c_matrix, cdag_matrix
-export monomial_connection
+export monomial_connection, monomial_matrix
 export partition_function, density_matrix
 
 """Eigensystem within one invariant subspace of the Hamiltonian"""
@@ -316,6 +316,30 @@ end
 """Matrix block of fundamental operator C†"""
 function cdag_matrix(ed::EDCore, indices::IndicesType, sp_index::Int)
   cdag_matrix(ed, ed.full_hs.soi[indices], sp_index)
+end
+
+#####################
+# monomial_matrix() #
+#####################
+
+"""Matrix block of a monomial"""
+function monomial_matrix(ed::EDCore{ScalarType},
+                         mon::Operators.Monomial,
+                         sp_index::Int) where {ScalarType <: Number}
+  sp = sp_index
+  sp_dim = length(ed.subspaces[sp])
+  mat = Matrix{ScalarType}(LinearAlgebra.I, sp_dim, sp_dim)
+  for op in Iterators.reverse(mon.ops)
+    new_sp = op.dagger ? cdag_connection(ed, op.indices, sp) :
+                         c_connection(ed, op.indices, sp)
+    if new_sp == nothing
+      throw(DomainError("Monomial $mon acts trivially in subspace $sp_index"))
+    end
+    mat = (op.dagger ? cdag_matrix(ed, op.indices, sp) :
+                       c_matrix(ed, op.indices, sp)) * mat
+    sp = new_sp
+  end
+  mat
 end
 
 ###################
