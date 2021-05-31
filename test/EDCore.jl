@@ -201,6 +201,31 @@ for (indices, n) in soi
         [(i == c_connection(ed, n, j)) for i=1:n_subspaces, j=1:n_subspaces]
 end
 
+# monomial_connection()
+
+# Constant monomial
+let m = Operators.Monomial()
+  for i=1:n_subspaces
+    @test monomial_connection(ed, m, i) == i
+  end
+  @test monomial_connection(ed, m) ==
+        BitArray([i == j for i in 1:n_subspaces, j in 1:n_subspaces])
+end
+# Quadratic monomial
+for (indices1, n1) in soi
+  for (indices2, n2) in soi
+    let m = Operators.Monomial([Operators.CanonicalOperator(true, indices1),
+                                Operators.CanonicalOperator(false, indices2)])
+      for i=1:n_subspaces
+        conn_ref = cdag_connection(ed, indices1, c_connection(ed, indices2, i))
+        @test monomial_connection(ed, m, i) == conn_ref
+      end
+      conn_mat_ref = cdag_connection(ed, indices1) * c_connection(ed, indices2)
+      @test monomial_connection(ed, m) == conn_mat_ref
+    end
+  end
+end
+
 # cdag_matrix() and c_matrix()
 # Check that C† * C is the number of particles
 for (indices, n) in soi
