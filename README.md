@@ -1,7 +1,7 @@
 KeldyshED.jl
 ============
 
-[![Build Status](https://travis-ci.org/krivenko/KeldyshED.jl.svg?branch=master)](https://travis-ci.org/krivenko/KeldyshED.jl)
+[![Build Status](https://travis-ci.com/krivenko/KeldyshED.jl.svg?branch=master)](https://travis-ci.com/krivenko/KeldyshED.jl)
 
 Equilibrium Exact Diagonalization solver for finite fermionic models that can
 also compute Green's functions on the Keldysh contour.
