@@ -558,8 +558,8 @@ function SpacePartition{HSType, S}(hs::HSType,
 
     for (f, a) in pairs(final_state)
       isapprox(a, 0, atol = 1e-10) && continue
-      i_subspace = find_root(subspaces, i)
-      f_subspace = find_root(subspaces, f)
+      i_subspace = find_root!(subspaces, i)
+      f_subspace = find_root!(subspaces, f)
       i_subspace != f_subspace && root_union!(subspaces, i_subspace, f_subspace)
       if store_matrix_elements
         matrix_elements[i, f] = a
@@ -570,7 +570,7 @@ function SpacePartition{HSType, S}(hs::HSType,
   end
 
   for i=1:length(hs)
-    root = find_root(subspaces, i)
+    root = find_root!(subspaces, i)
     if !(root in keys(root_to_index))
       root_to_index[root] = length(root_to_index) + 1
     end
@@ -584,7 +584,7 @@ numsubspaces(sp::SpacePartition) = length(sp.root_to_index)
 
 """Find what invariant subspace state with a given index belongs to"""
 function Base.getindex(sp::SpacePartition, index)
-  sp.root_to_index[find_root(sp.subspaces, index)]
+  sp.root_to_index[find_root!(sp.subspaces, index)]
 end
 
 """
@@ -610,14 +610,14 @@ function merge_subspaces!(sp::SpacePartition{HSType, S},
   # Fill connection multidicts
   init_state = StateDict{HSType, S}(sp.hs)
   for i=1:length(sp)
-    i_subspace = find_root(sp.subspaces, i)
+    i_subspace = find_root!(sp.subspaces, i)
     init_state[i] = one(S)
 
     fill_conn = (op, conn, matrix_elements) -> begin
       final_state = op * init_state
       for (f, a) in pairs(final_state)
         isapprox(a, 0, atol = 1e-10) && continue
-        insert!(conn, i_subspace, find_root(sp.subspaces, f))
+        insert!(conn, i_subspace, find_root!(sp.subspaces, f))
         if store_matrix_elements
           matrix_elements[i, f] = a
         end
@@ -669,7 +669,7 @@ function merge_subspaces!(sp::SpacePartition{HSType, S},
   # Rebuild sp.root_to_index
   empty!(sp.root_to_index)
   for i=1:length(sp)
-    root = find_root(sp.subspaces, i)
+    root = find_root!(sp.subspaces, i)
     if !(root in keys(sp.root_to_index))
       sp.root_to_index[root] = length(sp.root_to_index) + 1
     end
