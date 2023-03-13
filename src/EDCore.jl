@@ -160,7 +160,7 @@ function EDCore(hamiltonian::OperatorExpr{S}, soi::SetOfIndices) where {S <: Num
       mat = zeros(S, length(to_sp), length(from_sp))
 
       from_s = StateDict{FullHilbertSpace, S}(full_hs)
-      for i=1:length(from_sp)
+      for i in eachindex(from_sp)
         full_hs_i = getstateindex(full_hs, from_sp[i])
         from_s[full_hs_i] = one(S)
         to_s = op * from_s
@@ -273,7 +273,7 @@ function monomial_connection(ed::EDCore, mon::Operators.Monomial, sp_index::Int)
   for op in Iterators.reverse(mon.ops)
     sp = op.dagger ? cdag_connection(ed, op.indices, sp) :
                      c_connection(ed, op.indices, sp)
-    sp == nothing && return nothing
+    sp === nothing && return nothing
   end
   sp
 end
@@ -284,7 +284,7 @@ function monomial_connection(ed::EDCore, mon::Operators.Monomial)
   conn = falses(length(ed.subspaces), length(ed.subspaces))
   for j = 1:length(ed.subspaces)
     i = monomial_connection(ed, mon, j)
-    if i != nothing
+    if i !== nothing
       conn[i, j] = true
     end
   end
@@ -333,7 +333,7 @@ function monomial_matrix(ed::EDCore{ScalarType},
   for op in Iterators.reverse(mon.ops)
     new_sp = op.dagger ? cdag_connection(ed, op.indices, sp) :
                          c_connection(ed, op.indices, sp)
-    if new_sp == nothing
+    if new_sp === nothing
       throw(DomainError("Monomial $mon acts trivially in subspace $sp_index"))
     end
     mat = (op.dagger ? cdag_matrix(ed, op.indices, sp) :
@@ -362,7 +362,7 @@ function operator_blocks(ed::EDCore{EDScalarType},
   d = Dict{Int64,Matrix{ScalarType}}()
   for (mon, coeff) in op
     sp = monomial_connection(ed, mon, sp_index)
-    if sp != nothing
+    if sp !== nothing
       mat = coeff * monomial_matrix(ed, mon, sp_index)
       if sp in keys(d)
         d[sp] += mat
@@ -390,7 +390,7 @@ function operator_blocks(ed::EDCore{EDScalarType},
   for (mon, coeff) in op
     for j = 1:length(ed.subspaces)
       i = monomial_connection(ed, mon, j)
-      if i != nothing
+      if i !== nothing
         mat = coeff * monomial_matrix(ed, mon, j)
         key = (i, j)
         if key in keys(d)

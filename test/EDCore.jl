@@ -264,7 +264,7 @@ for (indices1, n1) in soi
       for i=1:n_subspaces
         j = c_connection(ed, indices2, i)
         k = cdag_connection(ed, indices1, j)
-        if j == nothing || k == nothing
+        if j === nothing || k === nothing
           @test_throws DomainError monomial_matrix(ed, m, i)
         else
           mat_ref = cdag_matrix(ed, indices1, j) * c_matrix(ed, indices2, i)
@@ -290,7 +290,7 @@ let op_one_term = RealOperatorExpr()
     for j=1:n_subspaces
       blocks = operator_blocks(ed, op_one_term, j)
       i = monomial_connection(ed, mon, j)
-      if i == nothing
+      if i === nothing
         @test isempty(blocks)
       else
         @test length(blocks) == 1

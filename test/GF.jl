@@ -107,7 +107,7 @@ end
 function test_gf_matrix_isapprox(G_matrix, G_scalar)
   @test length(G_scalar) == norbitals(G_matrix)
   grid = G_matrix.grid
-  for s = 1:length(G_scalar)
+  for s in eachindex(G_scalar)
     @test G_scalar[s].grid == grid
     @test gf_is_approx((t1, t2) -> G_scalar[s][t1, t2],
                        (t1, t2) -> G_matrix[t1, t2][s, s],
@@ -135,7 +135,7 @@ test_gf_matrix_isapprox(
 function test_gf_list_isapprox(G1, G2)
   @test length(G1) == length(G2)
   grid = G1[1].grid
-  for s = 1:length(G1)
+  for s in eachindex(G1)
     @test G1[s].grid == G2[s].grid
     @test gf_is_approx((t1, t2) -> G1[s][t1, t2],
                        (t1, t2) -> G2[s][t1, t2],
