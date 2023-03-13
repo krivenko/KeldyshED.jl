@@ -1,6 +1,6 @@
 # KeldyshED.jl
 #
-# Copyright (C) 2019 Igor Krivenko <igor.s.krivenko@gmail.com>
+# Copyright (C) 2019-2023 Igor Krivenko <igor.s.krivenko@gmail.com>
 # Copyright (C) 2015 P. Seth, I. Krivenko, M. Ferrero and O. Parcollet
 #
 # KeldyshED.jl is free software: you can redistribute it and/or modify it under the
