@@ -21,7 +21,7 @@ using KeldyshED.Operators
 using KeldyshED.Hilbert
 using KeldyshED
 using Test
-using LinearAlgebra: Diagonal, tr
+using LinearAlgebra: diagm, tr
 
 function make_hamiltonian()
   # Hubbard trimer
@@ -51,12 +51,15 @@ end
   β = 2.0
 
   en = reduce(vcat, energies(ed))
-  ρ_ref = exp(-β * Diagonal(en))
+  ρ_ref = exp(-β * diagm(en))
   z_ref = tr(ρ_ref)
   ρ_ref /= z_ref
 
   @test isapprox(partition_function(ed, β), z_ref, atol=1e-10)
-  @test isapprox(cat(density_matrix(ed, β)..., dims=(1,2)), ρ_ref, atol=1e-10)
+  ρ = density_matrix(ed, β)
+  @test isapprox(cat(ρ..., dims=(1,2)), ρ_ref, atol=1e-10)
+
+  @test isapprox(toeigenbasis(tofockbasis(ρ, ed), ed), ρ, atol=1e-10)
 end
 
 @testset "Evolution operator" begin
@@ -64,14 +67,14 @@ end
   ed = EDCore(H, soi)
 
   tmax = 2.0
-  β = 5.0
+  β = 2.0
 
   nt = 11
   nτ = 21
 
   function ref(sp, t1, t2)
-    exp(-im * Diagonal(ed.eigensystems[sp].eigenvalues) *
-                       (t1.bpoint.val - t2.bpoint.val))
+    exp(-im * diagm(ed.eigensystems[sp].eigenvalues) *
+                    (t1.bpoint.val - t2.bpoint.val))
   end
 
   grid_full = FullTimeGrid(twist(FullContour(tmax=tmax, β=β)), nt, nτ)
@@ -81,6 +84,11 @@ end
   for grid in (grid_full, grid_keld, grid_imag)
     S = evolution_operator(ed, grid)
     @test all(isapprox(S[sp][t1, t2], ref(sp, t1, t2), atol=1e-10)
+      for (t1, t2, sp) in Iterators.product(grid, grid, eachindex(S))
+    )
+
+    S_rec = toeigenbasis(tofockbasis(S, ed), ed)
+    @test all(isapprox(S_rec[sp][t1, t2], S[sp][t1, t2], atol=1e-10)
       for (t1, t2, sp) in Iterators.product(grid, grid, eachindex(S))
     )
   end
