@@ -417,14 +417,3 @@ energies(ed::EDCore) = [es.eigenvalues for es in ed.eigensystems]
 
 """List of unitary matrices for each subspace"""
 unitary_matrices(ed::EDCore) = [es.unitary_matrix for es in ed.eigensystems]
-
-"""Partition function"""
-function partition_function(ed::EDCore, β)
-  sum(sum(exp.(-β * es.eigenvalues)) for es in ed.eigensystems)
-end
-
-"""Equilibrium density matrix in the block-diagonal form"""
-function density_matrix(ed::EDCore, β)
-  z = partition_function(ed, β)
-  [Diagonal(exp.(-β * es.eigenvalues) / z) for es in ed.eigensystems]
-end

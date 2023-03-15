@@ -26,5 +26,6 @@ include("Operators.jl")
 include("Hilbert.jl")
 include("EDCore.jl")
 include("GF.jl")
+include("evolution.jl")
 
 end # module KeldyshED

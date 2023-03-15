@@ -63,8 +63,6 @@ ed = EDCore(H, soi)
 n_subspaces = 44
 @test length(ed.subspaces) == n_subspaces
 @test isapprox(ed.gs_energy, -0.6, atol=1e-10)
-z_ref = 14.385456264792685
-@test isapprox(partition_function(ed, beta), z_ref, atol=1e-10)
 
 # Thorough testing
 
@@ -132,15 +130,6 @@ for i=1:n_subspaces
   h = u_mat[i] * Diagonal(en[i]) * (u_mat[i]')
   h_ref = u_mat_ref[i_ref] * Diagonal(en_ref[i_ref]) * (u_mat_ref[i_ref]')
   @test isapprox(h, h_ref, atol = 1e-8)
-end
-
-# density_matrix()
-rho_ref = [Diagonal(exp.(-beta * en_bl) / z_ref) for en_bl in en_ref]
-
-rho = density_matrix(ed, beta)
-for i=1:n_subspaces
-  i_ref = findfirst(x->x==basis[i], basis_ref)
-  @test isapprox(rho[i], rho_ref[i_ref], atol = 1e-8)
 end
 
 # cdag_connection()
@@ -338,6 +327,5 @@ ed = EDCore(H, soi)
 # Only basic tests
 @test length(ed.subspaces) == 2368
 @test isapprox(ed.gs_energy, -0.6, atol=1e-10)
-@test isapprox(partition_function(ed, beta), 110.02248308225897, atol=1e-10)
 
 end
