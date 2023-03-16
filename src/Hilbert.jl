@@ -28,6 +28,7 @@ export FockState, HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
 export StateVector, StateDict, State, dot, project
 export Operator
 export SpacePartition, numsubspaces, merge_subspaces!
+export ⊗
 
 ################
 # SetOfIndices #
@@ -166,6 +167,32 @@ Base.values(fhs::FullHilbertSpace) = [FockState(i) for i=0:fhs.dim-1]
 function Base.pairs(fhs::FullHilbertSpace)
   collect(Iterators.Pairs([FockState(i) for i=0:fhs.dim-1],
                           LinearIndices(1:fhs.dim)))
+end
+
+###############################################
+# FullHilbertSpace: Direct products of spaces #
+###############################################
+
+"""
+  Construct a direct product of spaces H_A ⊗ H_B under the
+  assumption that the sets of indices generating H_A and H_B
+  are disjoint.
+"""
+function (⊗)(H_A::FullHilbertSpace, H_B::FullHilbertSpace)
+  @assert isdisjoint(keys(H_A.soi), keys(H_B.soi))
+  soi_AB = SetOfIndices(union(keys(H_A.soi), keys(H_B.soi)))
+  FullHilbertSpace(soi_AB)
+end
+
+"""
+  Construct a quotient space H_{AB} / H_A under the assumption
+  that the sets of indices generating H_{AB} and H_A satisfy
+  soi(H_A) ⊆ soi(H_{AB}).
+"""
+function Base.:(/)(H_AB::FullHilbertSpace, H_A::FullHilbertSpace)
+  @assert keys(H_A.soi) ⊆ keys(H_AB.soi)
+  soi_B = SetOfIndices(setdiff(keys(H_AB.soi), keys(H_A.soi)))
+  FullHilbertSpace(soi_B)
 end
 
 ###################

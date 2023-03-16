@@ -81,6 +81,22 @@ fhs2 = fhs1
 @test values(fhs2) == [FockState(i) for i=0:255]
 @test collect(pairs(fhs2)) == [i + 1 => FockState(i) for i=0:255]
 
+soi_A = SetOfIndices([[1], [3], [4]])
+soi_B = SetOfIndices([[2], [5]])
+fhs_A = FullHilbertSpace(soi_A)
+fhs_B = FullHilbertSpace(soi_B)
+fhs_AB = fhs_A ⊗ fhs_B
+@test length(fhs_AB) == 32
+@test collect(keys(fhs_AB.soi)) == [[1], [2], [3], [4], [5]]
+@test length(fhs_B ⊗ FullHilbertSpace()) == 4
+@test collect(keys((fhs_B ⊗ FullHilbertSpace()).soi)) == [[2], [5]]
+
+fhs_ABoverA = fhs_AB / fhs_A
+@test length(fhs_ABoverA) == 4
+@test collect(keys(fhs_ABoverA.soi)) == [[2], [5]]
+@test length(fhs_B / FullHilbertSpace()) == 4
+@test collect(keys((fhs_B / FullHilbertSpace()).soi)) == [[2], [5]]
+
 end
 
 # Check amplitudes of a given state
