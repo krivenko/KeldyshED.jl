@@ -54,6 +54,10 @@ for soi in (soi4, soi5)
   @test reversemap(soi) == [["a"],["b"],["c"],["d"]]
 end
 
+soi_from = SetOfIndices([["a"],["c"]])
+soi_to = SetOfIndices([["a"],["b"],["c"],["d"]])
+@test matching_indices(soi_from, soi_to) == [1, 3]
+
 end
 
 @testset "FullHilbertSpace" begin

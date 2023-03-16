@@ -23,7 +23,7 @@ using DataStructures
 using SparseArrays
 using KeldyshED.Operators
 
-export SetOfIndices, reversemap
+export SetOfIndices, reversemap, matching_indices
 export FockState, HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
 export StateVector, StateDict, State, dot, project
 export Operator
@@ -76,6 +76,14 @@ Base.in(indices, soi::SetOfIndices) = indices in keys(soi.map_index_n)
 
 """Build and return the reverse map: Int -> IndicesType"""
 reversemap(soi::SetOfIndices) = collect(keys(soi.map_index_n))
+
+"""
+  For each index sequence in `from`, find a linear index of
+  that sequence in `to` and collect the found indices.
+"""
+function matching_indices(soi_from::SetOfIndices, soi_to::SetOfIndices)
+  getindex.(Ref(soi_to), keys(soi_from))
+end
 
 #####################################
 # SetOfIndices: Iteration interface #
