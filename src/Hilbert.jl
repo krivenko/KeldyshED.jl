@@ -24,7 +24,8 @@ using SparseArrays
 using KeldyshED.Operators
 
 export SetOfIndices, reversemap, matching_indices
-export FockState, HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
+export FockState, translate
+export HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
 export StateVector, StateDict, State, dot, project
 export Operator
 export SpacePartition, numsubspaces, merge_subspaces!
@@ -109,6 +110,24 @@ abstract type HilbertSpace end
 
 """Fermionic Fock state encoded as a sequence of 0/1"""
 const FockState = UInt64
+
+"""
+  Reshuffle bits of a Fock state according to a given map / reverse map.
+"""
+function translate(fs::FockState,
+                   bit_map::Vector{Int64};
+                   reverse=false)::FockState
+  fs_out = FockState(0)
+  for (bit_from, bit_to) in pairs(bit_map)
+    if reverse
+      bit_from, bit_to = bit_to, bit_from
+    end
+    if fs & (0b1 << (bit_from - 1)) > 0
+      fs_out += (0b1 << (bit_to - 1))
+    end
+  end
+  return fs_out
+end
 
 ####################
 # FullHilbertSpace #

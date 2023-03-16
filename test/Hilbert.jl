@@ -66,6 +66,11 @@ using Base.Iterators
 
 @test length(FullHilbertSpace()) == 1
 
+@test translate(FockState(0b0010110), [3, 2, 1, 4, 7, 6, 5]) ==
+      FockState(0b1000011)
+@test translate(FockState(0b1000011), [3, 2, 1, 4, 7, 6, 5], reverse=true) ==
+      FockState(0b0010110)
+
 soi = SetOfIndices([[i,j] for i=1:2 for j=1:4])
 
 fhs1 = FullHilbertSpace(soi)
