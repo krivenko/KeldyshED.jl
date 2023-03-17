@@ -26,7 +26,6 @@ export fock_states, energies, unitary_matrices
 export c_connection, cdag_connection, c_matrix, cdag_matrix
 export monomial_connection, monomial_matrix
 export operator_blocks
-export partition_function, density_matrix
 
 """Eigensystem within one invariant subspace of the Hamiltonian"""
 struct EigenSystem{ScalarType <: Number}
