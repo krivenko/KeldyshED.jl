@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
+#
+# Authors: Igor Krivenko, Hugo U.R. Strand
 
 module Hilbert
 
@@ -29,7 +31,7 @@ export HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
 export StateVector, StateDict, State, dot, project
 export Operator
 export SpacePartition, numsubspaces, merge_subspaces!
-export ⊗
+export ⊗, product_basis_map, factorized_basis_map
 
 ################
 # SetOfIndices #
@@ -83,6 +85,7 @@ reversemap(soi::SetOfIndices) = collect(keys(soi.map_index_n))
   that sequence in `to` and collect the found indices.
 """
 function matching_indices(soi_from::SetOfIndices, soi_to::SetOfIndices)
+  @assert keys(soi_from) ⊆ keys(soi_to)
   getindex.(Ref(soi_to), keys(soi_from))
 end
 
@@ -220,6 +223,50 @@ function Base.:(/)(H_AB::FullHilbertSpace, H_A::FullHilbertSpace)
   @assert keys(H_A.soi) ⊆ keys(H_AB.soi)
   soi_B = SetOfIndices(setdiff(keys(H_AB.soi), keys(H_A.soi)))
   FullHilbertSpace(soi_B)
+end
+
+"""
+  Given three Hilbert spaces H_A, H_B and H_{AB}, constructs all product
+  Fock states |ψ>_{AB} = |ψ>_A ⊗ |ψ>_B, where |ψ>_A ∈ H_A, |ψ>_B ∈ H_B,
+  |ψ>_{AB} ∈ H_{AB}. Returns a mapping (an integer-valued matrix)
+  i, j -> k, where i, j and k are linear indices of |ψ>_A, |ψ>_B and
+  |ψ>_{AB} within their respective spaces.
+
+  Sets of indices soi(H_A), soi(H_B) must be disjoint and satisfy
+  soi(H_A) ⊆ soi(H_{AB}), soi(H_B) ⊆ soi(H_{AB}).
+"""
+function product_basis_map(H_A::FullHilbertSpace,
+                           H_B::FullHilbertSpace,
+                           H_AB::FullHilbertSpace)::Array{Int64, 2}
+  @assert isdisjoint(keys(H_A.soi), keys(H_B.soi))
+
+  all_fs_A_in_H_AB = translate.(H_A, Ref(matching_indices(H_A.soi, H_AB.soi)))
+  all_fs_B_in_H_AB = translate.(H_B, Ref(matching_indices(H_B.soi, H_AB.soi)))
+
+  [getstateindex(H_AB, fs_A + fs_B) for fs_A in all_fs_A_in_H_AB,
+                                        fs_B in all_fs_B_in_H_AB]
+end
+
+"""
+  Given a Hilbert space H_{AB} and its divisor H_A, factorizes all Fock states
+  |ψ>_{AB} ∈ H_{AB} into a direct product |ψ>_A ⊗ |ψ>_B, where |ψ>_A ∈ H_A,
+  |ψ>_B ∈ H_{AB} / H_A. Returns a mapping (a vector of integer pairs)
+  k -> (i, j), where i, j and k are linear indices of |ψ>_A, |ψ>_B and
+  |ψ>_{AB} within their respective spaces.
+
+  Sets of indices soi(H_{AB}), soi(H_A) must satisfy soi(H_A) ⊆ soi(H_{AB}).
+"""
+function factorized_basis_map(H_AB::FullHilbertSpace,
+                              H_A::FullHilbertSpace)
+  H_B = H_AB / H_A
+
+  fs_A_comp_of_fs_AB = translate.(H_AB, Ref(matching_indices(H_A.soi, H_AB.soi)),
+                                  reverse=true)
+  fs_B_comp_of_fs_AB = translate.(H_AB, Ref(matching_indices(H_B.soi, H_AB.soi)),
+                                  reverse=true)
+
+  [(getstateindex(H_A, fs_A), getstateindex(H_B, fs_B)) for
+   (fs_A, fs_B) in zip(fs_A_comp_of_fs_AB, fs_B_comp_of_fs_AB)]
 end
 
 ###################

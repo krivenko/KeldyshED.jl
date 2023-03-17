@@ -106,6 +106,26 @@ fhs_ABoverA = fhs_AB / fhs_A
 @test length(fhs_B / FullHilbertSpace()) == 4
 @test collect(keys((fhs_B / FullHilbertSpace()).soi)) == [[2], [5]]
 
+@testset "product_basis_map()" begin
+  fhs_A = FullHilbertSpace(SetOfIndices([[2], [5]]))
+  fhs_B = FullHilbertSpace(SetOfIndices([[3], [4]]))
+  fhs_big = FullHilbertSpace(SetOfIndices([[1], [2], [3], [4], [5]]))
+
+  @test product_basis_map(fhs_A, fhs_B, fhs_big) ==
+    [1 5 9 13; 3 7 11 15; 17 21 25 29; 19 23 27 31]
+end
+
+@testset "factorized_basis_map()" begin
+  fhs_A = FullHilbertSpace(SetOfIndices([[2], [5]]))
+  fhs_B = FullHilbertSpace(SetOfIndices([[3], [4]]))
+  fhs_AB = FullHilbertSpace(SetOfIndices([[2], [3], [4], [5]]))
+
+  bmap = product_basis_map(fhs_A, fhs_B, fhs_AB)
+  fmap = factorized_basis_map(fhs_AB, fhs_A)
+  @test length(fmap) == 16
+  @test all(bmap[i, j] == k for (k, (i, j)) in enumerate(fmap))
+end
+
 end
 
 # Check amplitudes of a given state
