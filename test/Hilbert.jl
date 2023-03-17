@@ -60,6 +60,8 @@ end
 
 using Base.Iterators
 
+@test length(FullHilbertSpace()) == 1
+
 soi = SetOfIndices([[i,j] for i=1:2 for j=1:4])
 
 fhs1 = FullHilbertSpace(soi)
