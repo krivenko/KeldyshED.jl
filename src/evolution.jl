@@ -84,17 +84,16 @@ end
   Transform a block-diagonal evolution operator written in the eigenbasis
   of the system into the Fock state basis.
 """
-function tofockbasis(S::EvolutionOperator, ed::EDCore)
-  S_fock = EvolutionOperator()
+function tofockbasis(S::Vector{GF}, ed::EDCore) where {GF <: AbstractTimeGF}
+  S_fock = GF[]
   for (s, es) in zip(S, ed.eigensystems)
     U = es.unitary_matrix
-    push!(S_fock,
-          GenericTimeGF(s.grid, length(es.eigenvalues)) do t1, t2
-            U * s[t1, t2] * adjoint(U)
-          end
-    )
+    push!(S_fock, similar(s))
+    for t1 in S_fock[end].grid, t2 in S_fock[end].grid
+      S_fock[end][t1, t2] = U * s[t1, t2] * adjoint(U)
+    end
   end
-  S_fock
+  return S_fock
 end
 
 """
@@ -110,17 +109,16 @@ end
   Transform a block-diagonal evolution operator written in the Fock state
   basis into the eigenbasis of the system.
 """
-function toeigenbasis(S::EvolutionOperator, ed::EDCore)
-  S_eigen = EvolutionOperator()
+function toeigenbasis(S::Vector{GF}, ed::EDCore) where {GF <: AbstractTimeGF}
+  S_eigen = GF[]
   for (s, es) in zip(S, ed.eigensystems)
     U = es.unitary_matrix
-    push!(S_eigen,
-          GenericTimeGF(s.grid, length(es.eigenvalues)) do t1, t2
-            adjoint(U) * s[t1, t2] * U
-          end
-    )
+    push!(S_eigen, similar(s))
+    for t1 in S_eigen[end].grid, t2 in S_eigen[end].grid
+      S_eigen[end][t1, t2] = adjoint(U) * s[t1, t2] * U
+    end
   end
-  S_eigen
+  return S_eigen
 end
 
 #################
