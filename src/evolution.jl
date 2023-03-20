@@ -72,15 +72,6 @@ end
 #########################
 
 """
-  Transform a block-diagonal matrix written in the eigenbasis of the system
-  into the Fock state basis.
-"""
-function tofockbasis(M::Vector{Matrix{T}}, ed::EDCore) where T
-  [es.unitary_matrix * m * adjoint(es.unitary_matrix)
-   for (m, es) in zip(M, ed.eigensystems)]
-end
-
-"""
   Transform a block-diagonal evolution operator written in the eigenbasis
   of the system into the Fock state basis.
 """
@@ -94,15 +85,6 @@ function tofockbasis(S::Vector{GF}, ed::EDCore) where {GF <: AbstractTimeGF}
     end
   end
   return S_fock
-end
-
-"""
-  Transform a block-diagonal matrix written in the Fock state basis into
-  the eigenbasis of the system.
-"""
-function toeigenbasis(M::Vector{Matrix{T}}, ed::EDCore) where T
-  [adjoint(es.unitary_matrix) * m * es.unitary_matrix
-   for (m, es) in zip(M, ed.eigensystems)]
 end
 
 """

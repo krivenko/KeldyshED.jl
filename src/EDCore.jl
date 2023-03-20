@@ -26,6 +26,7 @@ export fock_states, energies, unitary_matrices
 export c_connection, cdag_connection, c_matrix, cdag_matrix
 export monomial_connection, monomial_matrix
 export operator_blocks
+export tofockbasis, toeigenbasis, full_hs_matrix
 
 """Eigensystem within one invariant subspace of the Hamiltonian"""
 struct EigenSystem{ScalarType <: Number}
@@ -416,3 +417,37 @@ energies(ed::EDCore) = [es.eigenvalues for es in ed.eigensystems]
 
 """List of unitary matrices for each subspace"""
 unitary_matrices(ed::EDCore) = [es.unitary_matrix for es in ed.eigensystems]
+
+"""
+  Transform a block-diagonal matrix written in the eigenbasis of the system
+  into the Fock state basis.
+"""
+function tofockbasis(M::Vector{Matrix{T}}, ed::EDCore) where T <: Number
+  [es.unitary_matrix * m * adjoint(es.unitary_matrix)
+   for (m, es) in zip(M, ed.eigensystems)]
+end
+
+"""
+  Transform a block-diagonal matrix written in the Fock state basis into
+  the eigenbasis of the system.
+"""
+function toeigenbasis(M::Vector{Matrix{T}}, ed::EDCore) where T <: Number
+  [adjoint(es.unitary_matrix) * m * es.unitary_matrix
+   for (m, es) in zip(M, ed.eigensystems)]
+end
+
+"""
+  Flatten a list of diagonal matrix blocks acting in invariant subspaces
+  into a matrix acting in the full Hilbert space.
+"""
+function full_hs_matrix(M::Vector{Matrix{T}}, ed::EDCore) where T <: Number
+  n = length(ed.full_hs)
+  M_full = zeros(T, n, n)
+  for (Mss, hss) in zip(M, ed.subspaces)
+      for (i1, fs1) in pairs(hss), (i2, fs2) in pairs(hss)
+          M_full[getstateindex(ed.full_hs, fs1),
+                 getstateindex(ed.full_hs, fs2)] = Mss[i1, i2]
+      end
+  end
+  return M_full
+end
