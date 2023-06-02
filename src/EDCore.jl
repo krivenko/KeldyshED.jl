@@ -66,13 +66,22 @@ end
   This constructor calls the auto-partition procedure, and the QR algorithm
   to diagonalize the blocks. The invariant subspaces of the Hamiltonian are
   chosen such that all creation and annihilation operators from the provided
-  fundamental operator set map one subspace to one subspace.
+  fundamental operator set map one subspace to one subspace. It is possible to provide
+  an optional list of operators that must share the invariant subspaces with
+  the Hamiltonian.
 """
-function EDCore(hamiltonian::OperatorExpr{S}, soi::SetOfIndices) where {S <: Number}
+function EDCore(hamiltonian::OperatorExpr{S},
+                soi::SetOfIndices;
+                extra_subspace_generators::Vector{OperatorExpr{S}} = OperatorExpr{S}[]
+                ) where {S <: Number}
   full_hs = FullHilbertSpace(soi)
 
   h = Operator{FullHilbertSpace, S}(hamiltonian, soi)
   SP = SpacePartition{FullHilbertSpace, S}(full_hs, h, false)
+
+  for op in extra_subspace_generators
+    merge_subspaces!(SP, Operator{FullHilbertSpace, S}(op, soi), false)
+  end
 
   # Merge subspaces
   Cd_elements = Vector{SparseMatrixCSC{S, Int}}(undef, length(soi))
