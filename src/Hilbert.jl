@@ -648,14 +648,36 @@ function SpacePartition{HSType, S}(hs::HSType,
                                  S <: Number,
                                  OperatorType <: Operator}
   subspaces = IntDisjointSets(length(hs))
-  root_to_index = Dict{Int,Int}()
   matrix_elements = spzeros(S, length(hs), length(hs))
+  _merge_subspaces!(S, hs, H, subspaces, matrix_elements, store_matrix_elements)
 
+  root_to_index = Dict{Int,Int}()
+  _rebuild_root_to_index!(root_to_index, subspaces)
+
+  SpacePartition{HSType, S}(hs, subspaces, root_to_index, matrix_elements)
+end
+
+"""Return the number of subspaces in space partition"""
+numsubspaces(sp::SpacePartition) = length(sp.root_to_index)
+
+"""Find what invariant subspace state with a given index belongs to"""
+function Base.getindex(sp::SpacePartition, index)
+  sp.root_to_index[find_root!(sp.subspaces, index)]
+end
+
+function _merge_subspaces!(S::Type,
+                           hs::HSType,
+                           op::OperatorType,
+                           subspaces::IntDisjointSets,
+                           matrix_elements,
+                           store_matrix_elements::Bool) where {
+                            HSType <: HilbertSpace,
+                            OperatorType <: Operator}
   init_state = StateDict{HSType, S}(hs)
   for i=1:length(hs)
     init_state[i] = one(S)
 
-    final_state = H * init_state
+    final_state = op * init_state
 
     for (f, a) in pairs(final_state)
       isapprox(a, 0, atol = 1e-10) && continue
@@ -669,23 +691,25 @@ function SpacePartition{HSType, S}(hs::HSType,
 
     init_state[i] = zero(S)
   end
-
-  for i=1:length(hs)
-    root = find_root!(subspaces, i)
-    if !(root in keys(root_to_index))
-      root_to_index[root] = length(root_to_index) + 1
-    end
-  end
-
-  SpacePartition{HSType, S}(hs, subspaces, root_to_index, matrix_elements)
 end
 
-"""Return the number of subspaces in space partition"""
-numsubspaces(sp::SpacePartition) = length(sp.root_to_index)
+"""
+  Merge some of the invariant subspaces to ensure that the resulting subspaces
+  are also invariant w.r.t. a given operator `op`.
+"""
+function merge_subspaces!(sp::SpacePartition{HSType, S},
+                          op::OperatorType,
+                          store_matrix_elements::Bool = true) where {
+                           HSType <: HilbertSpace,
+                           S <: Number,
+                           OperatorType <: Operator}
+  matrix_elements = spzeros(S, length(sp), length(sp))
+  _merge_subspaces!(S, sp.hs, op, sp.subspaces, matrix_elements, store_matrix_elements)
 
-"""Find what invariant subspace state with a given index belongs to"""
-function Base.getindex(sp::SpacePartition, index)
-  sp.root_to_index[find_root!(sp.subspaces, index)]
+  # Rebuild sp.root_to_index
+  _rebuild_root_to_index!(sp.root_to_index, sp.subspaces)
+
+  return matrix_elements
 end
 
 """
@@ -768,15 +792,20 @@ function merge_subspaces!(sp::SpacePartition{HSType, S},
   end
 
   # Rebuild sp.root_to_index
-  empty!(sp.root_to_index)
-  for i=1:length(sp)
-    root = find_root!(sp.subspaces, i)
-    if !(root in keys(sp.root_to_index))
-      sp.root_to_index[root] = length(sp.root_to_index) + 1
-    end
-  end
+  _rebuild_root_to_index!(sp.root_to_index, sp.subspaces)
 
   return (Cd_elements, C_elements)
+end
+
+# Rebuild a root_to_index dictionary from a space partition
+function _rebuild_root_to_index!(root_to_index::Dict{Int, Int}, subspaces::IntDisjointSets)
+  empty!(root_to_index)
+  for i=1:length(subspaces)
+    root = find_root!(subspaces, i)
+    if !(root in keys(root_to_index))
+      root_to_index[root] = length(root_to_index) + 1
+    end
+  end
 end
 
 #######################################

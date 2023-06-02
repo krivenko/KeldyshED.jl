@@ -312,3 +312,60 @@ for op in all_ops
 end
 
 end
+
+@testset "SpacePartitionExtraOps" begin
+
+# Hubbard atom
+mu = 0.5
+U  = 3.0
+
+soi = SetOfIndices([["up"], ["dn"]])
+
+H = -mu * (n("up") + n("dn")) + U * n("up") * n("dn")
+
+fhs = FullHilbertSpace(soi)
+Hop = Operator{FullHilbertSpace, Float64}(H, soi)
+
+SP = SpacePartition{FullHilbertSpace, Float64}(fhs, Hop, true)
+
+@test length(SP) == 4
+@test numsubspaces(SP) == 4
+
+# Spin flips
+op_ud = Operator{FullHilbertSpace, Float64}(c_dag("up") * c("dn"), soi)
+op_du = Operator{FullHilbertSpace, Float64}(c_dag("dn") * c("up"), soi)
+
+merge_subspaces!(SP, op_ud, true)
+merge_subspaces!(SP, op_du, true)
+
+# Check that 1-particle subspaces have been merged together
+@test numsubspaces(SP) == 3
+
+cl = Set()
+push!(cl, Set([fhs[i] for (i, sp) in SP if sp == 1]))
+push!(cl, Set([fhs[i] for (i, sp) in SP if sp == 2]))
+push!(cl, Set([fhs[i] for (i, sp) in SP if sp == 3]))
+
+ref_cl = Set([Set([0]), Set([1, 2]), Set([3])])
+
+@test cl == ref_cl
+
+# Anomalous terms
+op_cc = Operator{FullHilbertSpace, Float64}(c("up") * c("dn"), soi)
+op_cdcd = Operator{FullHilbertSpace, Float64}(c_dag("dn") * c_dag("up"), soi)
+
+merge_subspaces!(SP, op_cc, true)
+merge_subspaces!(SP, op_cdcd, true)
+
+# Check that 0- and 2-particle subspaces have been merged together
+@test numsubspaces(SP) == 2
+
+cl = Set()
+push!(cl, Set([fhs[i] for (i, sp) in SP if sp == 1]))
+push!(cl, Set([fhs[i] for (i, sp) in SP if sp == 2]))
+
+ref_cl = Set([Set([0, 3]), Set([1, 2])])
+
+@test cl == ref_cl
+
+end
