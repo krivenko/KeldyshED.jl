@@ -3,6 +3,8 @@ KeldyshED.jl
 
 [![CI](https://github.com/krivenko/KeldyshED.jl/actions/workflows/CI.yml/badge.svg)](
 https://github.com/krivenko/KeldyshED.jl/actions/workflows/CI.yml)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-red)](
+https://krivenko.github.io/KeldyshED.jl)
 
 Equilibrium Exact Diagonalization solver for finite fermionic models that can
 also compute Green's functions on the Keldysh contour.
