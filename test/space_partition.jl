@@ -18,10 +18,11 @@
 #
 # Author: Igor Krivenko
 
+using Test
+using SparseArrays
+
 using KeldyshED.Operators
 using KeldyshED.Hilbert
-using SparseArrays
-using Test
 
 @testset "SpacePartition" begin
 

@@ -18,13 +18,15 @@
 #
 # Author: Igor Krivenko
 
+using Test
+using HDF5
+using Distributed: nprocs
+
 using Keldysh
+
 using KeldyshED.Operators
 using KeldyshED.Hilbert
 using KeldyshED: EDCore, computegf
-using HDF5
-using Test
-using Distributed
 
 @testset "computegf(): 3 bath sites" begin
 

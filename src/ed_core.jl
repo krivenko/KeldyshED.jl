@@ -18,17 +18,21 @@
 #
 # Author: Igor Krivenko
 
-using KeldyshED.Operators
-using KeldyshED.Hilbert
 using LinearAlgebra
 using SparseArrays
 
-export EDCore
-export fock_states, energies, unitary_matrices
-export c_connection, cdag_connection, c_matrix, cdag_matrix
-export monomial_connection, monomial_matrix
-export operator_blocks
-export tofockbasis, toeigenbasis, full_hs_matrix
+using ..Operators: IndicesType, OperatorExpr, c, c_dag
+using ..Hilbert: SetOfIndices,
+                 FullHilbertSpace,
+                 HilbertSubspace,
+                 Operator,
+                 StateVector,
+                 StateDict,
+                 SpacePartition,
+                 merge_subspaces!,
+                 numsubspaces,
+                 getstateindex,
+                 project
 
 """Eigensystem within one invariant subspace of the Hamiltonian"""
 struct EigenSystem{ScalarType <: Number}

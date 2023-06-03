@@ -18,12 +18,14 @@
 #
 # Author: Igor Krivenko
 
+using Test
+using LinearAlgebra: diagm, tr
+
 using Keldysh
+
 using KeldyshED.Operators
 using KeldyshED.Hilbert
 using KeldyshED
-using Test
-using LinearAlgebra: diagm, tr
 
 function make_hamiltonian(atoms, μ, U, t, λ)
   soi = SetOfIndices([[s, a] for s in ("up","dn") for a in atoms])

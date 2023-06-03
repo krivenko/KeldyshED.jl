@@ -24,6 +24,23 @@ on the Keldysh contour.
 """
 module KeldyshED
 
+# EDCore
+export EDCore
+export fock_states, energies, unitary_matrices
+export c_connection, cdag_connection, c_matrix, cdag_matrix
+export monomial_connection, monomial_matrix
+export operator_blocks
+export tofockbasis, toeigenbasis, full_hs_matrix
+
+# Green's functions
+export computegf, SerialGFFiller, DistributedGFFiller
+
+# Evolution operators
+export tofockbasis, toeigenbasis
+export partial_trace
+export partition_function, density_matrix, reduced_density_matrix
+export evolution_operator, reduced_evolution_operator
+
 include("operators.jl")
 include("hilbert.jl")
 include("ed_core.jl")

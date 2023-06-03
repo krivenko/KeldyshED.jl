@@ -18,9 +18,10 @@
 #
 # Author: Igor Krivenko
 
+using Test
+
 using KeldyshED.Operators
 using KeldyshED.Hilbert
-using Test
 
 @testset "SetOfIndices" begin
 

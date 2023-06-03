@@ -18,17 +18,9 @@
 #
 # Authors: Hugo U.R. Strand, Igor Krivenko
 
-using KeldyshED: EDCore, Hilbert
 using Keldysh
 
-export tofockbasis,
-       toeigenbasis,
-       partial_trace,
-       partition_function,
-       density_matrix,
-       reduced_density_matrix,
-       evolution_operator,
-       reduced_evolution_operator
+using .Hilbert: factorized_basis_map
 
 """Compute the partition function at an inverse temperature β"""
 function partition_function(ed::EDCore, β::Real)

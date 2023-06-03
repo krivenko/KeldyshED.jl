@@ -18,11 +18,12 @@
 #
 # Author: Igor Krivenko
 
+using Test
+using LinearAlgebra: I, Diagonal
+
 using KeldyshED.Operators
 using KeldyshED.Hilbert
 using KeldyshED
-using Test
-using LinearAlgebra: I, Diagonal
 
 function make_hamiltonian(n_orb, mu, U, J)
   soi = SetOfIndices([[s,o] for s in ("up","dn") for o = 1:n_orb])

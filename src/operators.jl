@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License along with
 # KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
 #
-# Author: Igor Krivenko
+# Authors: Igor Krivenko, Hugo U.R. Strand
 
 module Operators
-
-using DataStructures
 
 export IndicesType
 export OperatorExpr, RealOperatorExpr, ComplexOperatorExpr, scalartype
 export c, c_dag, n, dagger
+
+using DataStructures
 
 #################################
 # Auxiliary types and functions #

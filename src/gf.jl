@@ -18,12 +18,9 @@
 #
 # Author: Igor Krivenko
 
-using KeldyshED: EDCore
-using Keldysh
 using LinearAlgebra: Diagonal, tr
 using Distributed
-
-export computegf, SerialGFFiller, DistributedGFFiller
+using Keldysh
 
 """
   Compute Green's function element at times t1, t2 for given indices of

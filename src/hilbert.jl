@@ -20,11 +20,6 @@
 
 module Hilbert
 
-using LinearAlgebra
-using DataStructures
-using SparseArrays
-using KeldyshED.Operators
-
 export SetOfIndices, reversemap, matching_indices
 export FockState, translate
 export HilbertSpace, FullHilbertSpace, HilbertSubspace, getstateindex
@@ -32,6 +27,12 @@ export StateVector, StateDict, State, dot, project
 export Operator
 export SpacePartition, numsubspaces, merge_subspaces!
 export ⊗, product_basis_map, factorized_basis_map
+
+using LinearAlgebra
+using DataStructures
+using SparseArrays
+
+using ..Operators: IndicesType, OperatorExpr
 
 ################
 # SetOfIndices #

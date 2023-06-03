@@ -18,8 +18,9 @@
 #
 # Author: Igor Krivenko
 
-using KeldyshED.Operators
 using Test
+
+using KeldyshED.Operators
 
 function test_comm_anticomm(Cd::Vector{O}, C::Vector{O}) where O
   S = scalartype(O)
