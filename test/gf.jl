@@ -83,7 +83,7 @@ g_imag_s = [computegf(ed, grid_imag, d, d, gf_filler = gf_filler),
             computegf(ed, grid_imag, u, u, gf_filler = gf_filler)]
 
 test_dir = @__DIR__
-h5open(test_dir * "/GF.ref.h5", "r") do ref_file
+h5open(test_dir * "/gf.ref.h5", "r") do ref_file
   @test isapprox(ed.gs_energy, read(ref_file["gs_energy"]), atol = 1.e-8)
   for s = 1:2
     g_ref = read(ref_file["/gf/$(s-1)"], Keldysh.ALPSTimeGF).G

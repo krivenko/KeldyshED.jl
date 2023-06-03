@@ -22,10 +22,10 @@ on the Keldysh contour.
 """
 module KeldyshED
 
-include("Operators.jl")
-include("Hilbert.jl")
-include("EDCore.jl")
-include("GF.jl")
+include("operators.jl")
+include("hilbert.jl")
+include("ed_core.jl")
+include("gf.jl")
 include("evolution.jl")
 
 end # module KeldyshED

@@ -18,9 +18,9 @@
 # You should have received a copy of the GNU General Public License along with
 # KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
 
-include("Operators.jl")
-include("Hilbert.jl")
-include("SpacePartition.jl")
-include("EDCore.jl")
-include("GF.jl")
+include("operators.jl")
+include("hilbert.jl")
+include("space_partition.jl")
+include("ed_core.jl")
+include("gf.jl")
 include("evolution.jl")
