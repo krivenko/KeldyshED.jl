@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
+#
+# Author: Igor Krivenko
 
 using KeldyshED.Operators
 using Test
@@ -67,7 +69,7 @@ end
 
   # Nested algebra
   @test 0.25*n(1) == 0.5*(0.5*n(1))
-    
+
   # N^3
   N  = n("up") + n("dn");
   N3 = N * N * N;
