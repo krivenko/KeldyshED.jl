@@ -21,12 +21,9 @@ depends on.
 Usage
 -----
 
-KeldyshED.jl depends on a few packages. These dependencies can be installed by
-typing the following commands in Julia's `Pkg` REPL:
+KeldyshED.jl can be installed by typing the following command in Julia's `Pkg` REPL:
 
-    add HDF5
-    add ArgParse
-    add https://github.com/kleinhenz/Keldysh.jl.git#v0.6.1
+    add KeldyshED
 
 Some usage examples can be found in the `test` subdirectory.
 
