@@ -22,3 +22,7 @@ makedocs(;
         "Evolution operators" => "evolution.md"
     ],
 )
+
+deploydocs(
+    repo = "github.com/krivenko/KeldyshED.jl.git"
+)
