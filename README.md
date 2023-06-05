@@ -1,5 +1,5 @@
-KeldyshED.jl
-============
+KeldyshED
+=========
 
 [![CI](https://github.com/krivenko/KeldyshED.jl/actions/workflows/CI.yml/badge.svg)](
 https://github.com/krivenko/KeldyshED.jl/actions/workflows/CI.yml)
@@ -13,8 +13,9 @@ Copyright (C) 2019-2023 Igor Krivenko <igor.s.krivenko@gmail.com>
 
 Copyright (C) 2015 P. Seth, I. Krivenko, M. Ferrero and O. Parcollet
 
-This is my first attempt at writing Julia code and, to a large extent, a
-simplified port of the `TRIQS/atom_diag` library.
+The initial public version of this package was a simplified Julia port of
+the [TRIQS/atom_diag](https://triqs.github.io/triqs/latest/documentation/manual/triqs/atom_diag/contents.html)
+library, but has since acquired a few new features.
 
 Special thanks to Joseph Kleinhenz for reviewing my code, as well as for writing
 the [Keldysh.jl](https://github.com/kleinhenz/Keldysh.jl) library, which `KeldyshED.jl`
@@ -25,9 +26,11 @@ Usage
 
 KeldyshED.jl can be installed by typing the following command in Julia's `Pkg` REPL:
 
-    add KeldyshED
+    pkg> add KeldyshED
 
-Some usage examples can be found in the `test` subdirectory.
+Some usage examples can be found in the [test](test) subdirectory.
+An API reference is available at the [documentation website](
+https://krivenko.github.io/KeldyshED.jl).
 
 License
 -------
