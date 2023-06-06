@@ -316,7 +316,7 @@ end
 
 end
 
-@testset "SpacePartitionExtraOps" begin
+@testset "SpacePartitionSymBreaking" begin
 
 # Hubbard atom
 mu = 0.5

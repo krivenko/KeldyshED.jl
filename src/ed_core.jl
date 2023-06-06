@@ -78,14 +78,14 @@ end
 """
 function EDCore(hamiltonian::OperatorExpr{S},
                 soi::SetOfIndices;
-                extra_subspace_generators::Vector{OperatorExpr{S}} = OperatorExpr{S}[]
+                symmetry_breakers::Vector{OperatorExpr{S}} = OperatorExpr{S}[]
                 ) where {S <: Number}
   full_hs = FullHilbertSpace(soi)
 
   h = Operator{FullHilbertSpace, S}(hamiltonian, soi)
   SP = SpacePartition{FullHilbertSpace, S}(full_hs, h, false)
 
-  for op in extra_subspace_generators
+  for op in symmetry_breakers
     merge_subspaces!(SP, Operator{FullHilbertSpace, S}(op, soi), false)
   end
 
