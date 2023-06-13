@@ -39,7 +39,7 @@ using ..Operators: IndicesType, OperatorExpr
 ################
 
 """Mapping from Operators.IndicesType to a linear index"""
-mutable struct SetOfIndices
+mutable struct SetOfIndices <: AbstractDict{IndicesType, Int}
   map_index_n::SortedDict{IndicesType, Int}
 end
 
@@ -109,11 +109,11 @@ Base.pairs(soi::SetOfIndices) = pairs(soi.map_index_n)
 # HilbertSpace #
 ################
 
-"""Abstract base for FullHilbertSpace and HilbertSubspace"""
-abstract type HilbertSpace end
-
 """Fermionic Fock state encoded as a sequence of 0/1"""
 const FockState = UInt64
+
+"""Abstract base for FullHilbertSpace and HilbertSubspace"""
+abstract type HilbertSpace <: AbstractVector{FockState} end
 
 """
   Reshuffle bits of a Fock state according to a given map / reverse map.
@@ -185,6 +185,7 @@ Base.eltype(fhs::FullHilbertSpace) = FockState
 
 Base.length(fhs::FullHilbertSpace)::Int = fhs.dim
 Base.isempty(fhs::FullHilbertSpace) = fhs.dim == 0
+Base.size(fhs::FullHilbertSpace) = (length(fhs),)
 
 function Base.iterate(fhs::FullHilbertSpace)
   fhs.dim > 0 ? (FockState(0), 0) : nothing
@@ -311,6 +312,7 @@ Base.eltype(hss::HilbertSubspace) = FockState
 
 Base.length(hss::HilbertSubspace) = length(hss.fock_states)
 Base.isempty(hss::HilbertSubspace) = isempty(hss.fock_states)
+Base.size(hss::HilbertSubspace) = (length(hss),)
 
 Base.iterate(hss::HilbertSubspace) = iterate(hss.fock_states)
 Base.iterate(hss::HilbertSubspace, it) = iterate(hss.fock_states, it)
