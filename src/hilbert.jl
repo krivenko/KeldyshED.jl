@@ -587,16 +587,7 @@ function Operator{HSType, S}(op_expr::OperatorExpr{S},
   Operator{HSType, S}(terms)
 end
 
-function parity_number_of_bits(v::FockState)
-  x = copy(v)
-  # http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetNaive
-  x ⊻= (x >> 16)
-  x ⊻= (x >> 8)
-  x ⊻= (x >> 4)
-  x ⊻= (x >> 2)
-  x ⊻= (x >> 1)
-  x & 0x01
-end
+_parity_number_of_bits(v::FockState) = isodd(count_ones(v))
 
 """Act on a state and return a new state"""
 function Base.:*(op::Operator, st::StateType) where {StateType <: State}
@@ -609,8 +600,8 @@ function Base.:*(op::Operator, st::StateType) where {StateType <: State}
       ((f2 ⊻ term.creation_mask) & term.creation_mask) !=
         term.creation_mask && continue
       f3 = ~(~f2 & ~term.creation_mask)
-      sign = parity_number_of_bits((f2 & term.annihilation_count_mask) ⊻
-                                   (f3 & term.creation_count_mask)) == 0 ? 1 : -1
+      sign = _parity_number_of_bits((f2 & term.annihilation_count_mask) ⊻
+                                    (f3 & term.creation_count_mask)) == 0 ? 1 : -1
       ind = getstateindex(target_st.hs, f3)
       target_st[ind] += a * term.coeff * sign
     end
