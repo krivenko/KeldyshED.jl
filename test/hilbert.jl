@@ -195,6 +195,8 @@ all_states = [(fhs1, StateVector{FullHilbertSpace, Float64}(fhs1)),
               (hss1, StateDict{HilbertSubspace, Float64}(hss1))]
 
 for (hs, st1) in all_states
+  @test eltype(st1) == Pair{Int, Float64}
+
   st2 = deepcopy(st1)
 
   st1[1] = 3.0

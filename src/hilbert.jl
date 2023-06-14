@@ -395,9 +395,7 @@ function Base.show(io::IO, sv::StateVector{HSType, S}) where {HSType, S}
   if !something_written print(io, "0") end
 end
 
-function Base.eltype(sv::StateVector{HSType, S}) where {HSType, S}
-  typeof(pairs(sv.amplitudes))
-end
+Base.eltype(sv::StateVector{HSType, S}) where {HSType, S} = Pair{Int, S}
 
 """Project a state from one Hilbert space to another Hilbert space/subspace"""
 function project(sv::StateVector{HSType, S},
@@ -490,7 +488,7 @@ function Base.show(io::IO, sd::StateDict{HSType, S}) where {HSType, S}
   if !something_written print(io, "0") end
 end
 
-Base.eltype(sd::StateDict) = typeof(sv.amplitudes)
+Base.eltype(sd::StateDict) = eltype(sd.amplitudes)
 
 """Project a state from one Hilbert space to another Hilbert space/subspace"""
 function project(sd::StateDict{HSType, S},
