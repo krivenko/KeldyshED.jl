@@ -13,7 +13,7 @@ the [N-crossing approximations](https://journals.aps.org/prb/abstract/10.1103/Ph
 
 The initial public version of this package was a simplified Julia port of
 the [TRIQS/atom_diag](https://triqs.github.io/triqs/latest/documentation/manual/triqs/atom_diag/contents.html)
-library, but has since acquired a few new features, e.g. calculation
+library, but has since acquired a number of unique features, e.g. calculation
 of [Evolution operators](@ref).
 
 ## Installation
@@ -24,4 +24,14 @@ invocation
 ```julia
 using Pkg
 Pkg.add("KeldyshED")
+```
+
+## Public API
+
+```@contents
+Pages = ["operators.md",
+         "hilbert.md",
+         "ed_core.md",
+         "gf.md",
+         "evolution.md"]
 ```
