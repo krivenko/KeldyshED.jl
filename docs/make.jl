@@ -16,10 +16,10 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Expressions with creation/annihilation operators of fermions" => "operators.md",
-        "Hilbert spaces" => "hilbert.md",
-        "Exact diagonalization core" => "ed_core.md",
+        "Hilbert spaces, states and linear operators" => "hilbert.md",
+        "Exact Diagonalization solver" => "ed_core.md",
         "Single-particle Green's functions" => "gf.md",
-        "Evolution operators" => "evolution.md"
+        "Evolution operators and density matrix" => "evolution.md"
     ],
 )
 

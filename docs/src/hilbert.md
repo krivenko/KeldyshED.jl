@@ -46,8 +46,8 @@ StateDict(hs)
 Base.similar
 dot
 project
-Base.show(io::IO, sv::StateVector)
-Base.show(io::IO, sd::StateDict)
+Base.show(io::IO, sv::StateVector{HSType, S}) where {HSType, S}
+Base.show(io::IO, sd::StateDict{HSType, S}) where {HSType, S}
 ```
 
 ## Operators acting in Hilbert spaces

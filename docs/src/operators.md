@@ -35,7 +35,7 @@ OperatorExpr{S}(x::S) where {S <: Number}
 RealOperatorExpr
 ComplexOperatorExpr
 scalartype
-dagger(op::OperatorExpr)
+dagger(op::OperatorExpr{S}) where S
 Base.iszero(op::OperatorExpr)
 Base.length(op::OperatorExpr)
 Base.isempty(op::OperatorExpr)

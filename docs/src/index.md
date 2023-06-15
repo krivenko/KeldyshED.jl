@@ -28,6 +28,10 @@ Pkg.add("KeldyshED")
 
 ## Public API
 
+```@docs
+KeldyshED
+```
+
 ```@contents
 Pages = ["operators.md",
          "hilbert.md",
