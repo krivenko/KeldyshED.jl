@@ -20,11 +20,32 @@
 
 using LinearAlgebra: Diagonal, tr
 using Distributed
+using DocStringExtensions
+
 using Keldysh
 
 """
-  Compute Green's function element at times t1, t2 for given indices of
-  creation/annihilation operators
+$(TYPEDSIGNATURES)
+
+Compute single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)],
+\\quad \\hat\\rho = \\frac{e^{-\\beta\\hat H}}{\\mathrm{Tr}[e^{-\\beta\\hat H}]}
+```
+
+at given contour times ``t_1``, ``t_2`` for given compound indices of creation/annihilation
+operators ``i`` and ``j``.
+
+Arguments
+---------
+- `ed`:         Exact Diagonalization object.
+- `t1`:         Contour time ``t_1``.
+- `t2`:         Contour time ``t_2``.
+- `c_index`:    Compound index ``i``.
+- `cdag_index`: Compound index ``j``.
+- `β`:          Inverse temperature ``\\beta``.
 """
 function computegf(ed::EDCore,
                    t1::BranchPoint,
@@ -32,22 +53,41 @@ function computegf(ed::EDCore,
                    c_index::IndicesType,
                    cdag_index::IndicesType,
                    β::Float64)::ComplexF64
-  computegf(ed,
-            t1,
-            t2,
-            c_index,
-            cdag_index,
-            en = energies(ed),
-            ρ = density_matrix(ed, β)
-  )
+  return computegf(ed,
+                   t1,
+                   t2,
+                   c_index,
+                   cdag_index,
+                   en = energies(ed),
+                   ρ = density_matrix(ed, β)
+         )
 end
 
 """
-  Compute Green's function element at times t1, t2 for given indices of
-  creation/annihilation operators
+$(TYPEDSIGNATURES)
 
-  This method is optimized for the case where the density matrix has already
-  been computed.
+Compute single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+at given contour times ``t_1``, ``t_2`` for given compound indices of creation/annihilation
+operators ``i`` and ``j``. This method is useful if the density matrix ``\\hat\\rho`` has
+already been computed.
+
+Arguments
+---------
+- `ed`:         Exact Diagonalization object.
+- `t1`:         Contour time ``t_1``.
+- `t2`:         Contour time ``t_2``.
+- `c_index`:    Compound index ``i``.
+- `cdag_index`: Compound index ``j``.
+- `en`:         Energy levels of the system as returned by
+                [`energies()`](@ref KeldyshED.energies).
+- `ρ`           Density matrix ``\\hat\\rho`` as returned by
+                [`density_matrix()`](@ref KeldyshED.density_matrix).
 """
 function computegf(ed::EDCore,
                    t1::BranchPoint,
@@ -90,13 +130,18 @@ function computegf(ed::EDCore,
     left_mat = left_mat * inner_exp
     val += tr(ρ[outer_sp] * left_mat * right_mat)
   end
-  (greater ? -1im : 1im) * val
+  return (greater ? -1im : 1im) * val
 end
 
-# Filler objects
+"Abstract supertype for GF filler types."
 abstract type AbstractGFFiller end
 
+"""
+An argument of this type instructs Green's function computation routines to use a serial
+(non-parallelized) algorithm.
+"""
 struct SerialGFFiller <: AbstractGFFiller end
+
 function (::SerialGFFiller)(f::Function,
                             gf::AbstractTimeGF{T, scalar},
                             element_list) where {T <: Number, scalar}
@@ -105,7 +150,12 @@ function (::SerialGFFiller)(f::Function,
   end
 end
 
+"""
+An argument of this type instructs Green's function computation routines to use
+`Distributed.@distributed` to speed up calculation.
+"""
 struct DistributedGFFiller <: AbstractGFFiller end
+
 function (::DistributedGFFiller)(f::Function,
                                  gf::AbstractTimeGF{T, scalar},
                                  element_list) where {T <: Number, scalar}
@@ -160,9 +210,25 @@ end
 #
 
 """
-  Compute Green's function on a full 3-branch contour
+$(TYPEDSIGNATURES)
 
-  This method returns a scalar-valued `TimeInvariantFullTimeGF` object.
+Compute single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+on a 3-branch Konstantinov-Perel contour for given compound indices of creation/annihilation
+operators ``i`` and ``j``.
+
+Arguments
+---------
+- `ed`:         Exact Diagonalization object.
+- `grid`:       Time grid on the 3-branch contour.
+- `c_index`:    Compound index ``i``.
+- `cdag_index`: Compound index ``j``.
+- `gf_filler`:  [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
@@ -172,14 +238,32 @@ function computegf(ed::EDCore,
                    TimeInvariantFullTimeGF{ComplexF64, true}
   gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
   _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
-  gf
+  return gf
 end
 
 """
-  Compute Green's function on a Keldysh contour with a decoupled initial
-  thermal state at inverse temperature β
+$(TYPEDSIGNATURES)
 
-  This method returns a scalar-valued `TimeInvariantKeldyshTimeGF` object.
+Compute single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)],
+\\quad \\hat\\rho = \\frac{e^{-\\beta\\hat H}}{\\mathrm{Tr}[e^{-\\beta\\hat H}]}
+```
+
+on a 2-branch Keldysh contour for given compound indices of creation/annihilation
+operators ``i`` and ``j`` with a decoupled initial thermal state at inverse temperature
+``\\beta``.
+
+Arguments
+---------
+- `ed`:         Exact Diagonalization object.
+- `grid`:       Time grid on the 2-branch contour.
+- `c_index`:    Compound index ``i``.
+- `cdag_index`: Compound index ``j``.
+- `β`:          Inverse temperature ``\\beta``.
+- `gf_filler`:  [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
@@ -190,13 +274,29 @@ function computegf(ed::EDCore,
                    TimeInvariantKeldyshTimeGF{ComplexF64, true}
   gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
   _computegf!(ed, gf, [c_index], [cdag_index], β, gf_filler)
-  gf
+  return gf
 end
 
 """
-  Compute imaginary time Green's function
+$(TYPEDSIGNATURES)
 
-  This method returns a scalar-valued `ImaginaryTimeGF` object.
+Compute single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+on the imaginary time segment ``[0;-i\\beta]`` for given compound indices of
+creation/annihilation operators ``i`` and ``j``.
+
+Arguments
+---------
+- `ed`:         Exact Diagonalization object.
+- `grid`:       Time grid on the imaginary time segment.
+- `c_index`:    Compound index ``i``.
+- `cdag_index`: Compound index ``j``.
+- `gf_filler`:  [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
@@ -206,7 +306,7 @@ function computegf(ed::EDCore,
                    ImaginaryTimeGF{ComplexF64, true}
   gf = ImaginaryTimeGF(grid, 1, fermionic, true)
   _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
-  gf
+  return gf
 end
 
 #
@@ -214,29 +314,59 @@ end
 #
 
 """
-  Compute Green's function on a full 3-branch contour
+$(TYPEDSIGNATURES)
 
-  This method returns a vector of scalar-valued `TimeInvariantFullTimeGF`
-  objects, one element per a pair of indices in `c_cdag_index_pairs`.
+Compute multiple single-particle Keldysh Green's functions
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+on a 3-branch Konstantinov-Perel contour for given compound indices of creation/annihilation
+operators ``i`` and ``j``.
+
+Arguments
+---------
+- `ed`:                 Exact Diagonalization object.
+- `grid`:               Time grid on the 3-branch contour.
+- `c_cdag_index_pairs`: List of compound index pairs ``(i, j)``.
+- `gf_filler`:          [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
                    c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}};
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{TimeInvariantFullTimeGF{ComplexF64, true}}
-  map(c_cdag_index_pairs) do (c_index, cdag_index)
+  return map(c_cdag_index_pairs) do (c_index, cdag_index)
     gf = TimeInvariantFullTimeGF(grid, 1, fermionic, true)
     _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
-    gf
+    return gf
   end
 end
 
 """
-  Compute Green's function on a Keldysh contour with a decoupled initial thermal
-  state at inverse temperature β
+$(TYPEDSIGNATURES)
 
-  This method returns a vector of scalar-valued `TimeInvariantKeldyshTimeGF`
-  objects, one element per a pair of indices in `c_cdag_index_pairs`.
+Compute multiple single-particle Keldysh Green's functions
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)],
+\\quad \\hat\\rho = \\frac{e^{-\\beta\\hat H}}{\\mathrm{Tr}[e^{-\\beta\\hat H}]}
+```
+
+on a 2-branch Keldysh contour for given compound indices of creation/annihilation
+operators ``i`` and ``j`` with a decoupled initial thermal state at inverse temperature
+``\\beta``.
+
+Arguments
+---------
+- `ed`:                 Exact Diagonalization object.
+- `grid`:               Time grid on the 2-branch contour.
+- `c_cdag_index_pairs`: List of compound index pairs ``(i, j)``.
+- `β`:                  Inverse temperature ``\\beta``.
+- `gf_filler`:          [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
@@ -244,28 +374,42 @@ function computegf(ed::EDCore,
                    β::Float64;
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{TimeInvariantKeldyshTimeGF{ComplexF64, true}}
-  map(c_cdag_index_pairs) do (c_index, cdag_index)
+  return map(c_cdag_index_pairs) do (c_index, cdag_index)
     gf = TimeInvariantKeldyshTimeGF(grid, 1, fermionic, true)
     _computegf!(ed, gf, [c_index], [cdag_index], β, gf_filler)
-    gf
+    return gf
   end
 end
 
 """
-  Compute imaginary time Green's function
+$(TYPEDSIGNATURES)
 
-  This method returns a vector of scalar-valued `ImaginaryTimeGF` objects,
-  one element per a pair of indices in `c_cdag_index_pairs`.
+Compute multiple single-particle Keldysh Green's functions
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+on the imaginary time segment ``[0;-i\\beta]`` for given compound indices of
+creation/annihilation operators ``i`` and ``j``.
+
+Arguments
+---------
+- `ed`:                 Exact Diagonalization object.
+- `grid`:               Time grid on the imaginary time segment.
+- `c_cdag_index_pairs`: List of compound index pairs ``(i, j)``.
+- `gf_filler`:          [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
                    c_cdag_index_pairs::Vector{Tuple{IndicesType, IndicesType}};
                    gf_filler::AbstractGFFiller = SerialGFFiller())::
                    Vector{ImaginaryTimeGF{ComplexF64, true}}
-  map(c_cdag_index_pairs) do (c_index, cdag_index)
+  return map(c_cdag_index_pairs) do (c_index, cdag_index)
     gf = ImaginaryTimeGF(grid, 1, fermionic, true)
     _computegf!(ed, gf, [c_index], [cdag_index], grid.contour.β, gf_filler)
-    gf
+    return gf
   end
 end
 
@@ -274,10 +418,25 @@ end
 #
 
 """
-  Compute Green's function on a full 3-branch contour
+$(TYPEDSIGNATURES)
 
-  This method returns a matrix-valued `TimeInvariantFullTimeGF` objects
-  constructed from a direct product of `c_indices` and `cdag_indices`.
+Compute a matrix-valued single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+on a 3-branch Konstantinov-Perel contour for all possible pairs of compound indices
+``(i, j)`` given a list of ``i`` and a list of ``j`` (the lists must have equal length).
+
+Arguments
+---------
+- `ed`:           Exact Diagonalization object.
+- `grid`:         Time grid on the 3-branch contour.
+- `c_indices`:    List of compound indices ``i``.
+- `cdag_indices`: List of compound indices ``j``.
+- `gf_filler`:    [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::FullTimeGrid,
@@ -289,15 +448,31 @@ function computegf(ed::EDCore,
   @assert norb == length(cdag_indices)
   gf = TimeInvariantFullTimeGF(grid, norb)
   _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β, gf_filler)
-  gf
+  return gf
 end
 
 """
-  Compute Green's function on a Keldysh contour with a decoupled initial thermal
-  state at inverse temperature β
+$(TYPEDSIGNATURES)
 
-  This method returns a matrix-valued `TimeInvariantKeldyshTimeGF` objects
-  constructed from a direct product of `c_indices` and `cdag_indices`.
+Compute a matrix-valued single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)],
+\\quad \\hat\\rho = \\frac{e^{-\\beta\\hat H}}{\\mathrm{Tr}[e^{-\\beta\\hat H}]}
+```
+
+on a 2-branch Keldysh contour for all possible pairs of compound indices
+``(i, j)`` given a list of ``i`` and a list of ``j`` (the lists must have equal length).
+
+Arguments
+---------
+- `ed`:           Exact Diagonalization object.
+- `grid`:         Time grid on the 2-branch contour.
+- `c_indices`:    List of compound indices ``i``.
+- `cdag_indices`: List of compound indices ``j``.
+- `β`:            Inverse temperature ``\\beta``.
+- `gf_filler`:    [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::KeldyshTimeGrid,
@@ -310,14 +485,29 @@ function computegf(ed::EDCore,
   @assert norb == length(cdag_indices)
   gf = TimeInvariantKeldyshTimeGF(grid, norb)
   _computegf!(ed, gf, c_indices, cdag_indices, β, gf_filler)
-  gf
+  return gf
 end
 
 """
-  Compute imaginary time Green's function
+$(TYPEDSIGNATURES)
 
-  This method returns a matrix-valued `ImaginaryTimeGF` objects
-  constructed from a direct product of `c_indices` and `cdag_indices`.
+Compute a matrix-valued single-particle Keldysh Green's function
+
+```math
+G_{ij}(t_1, t_2) =
+-i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
+```
+
+on the imaginary time segment ``[0;-i\\beta]`` for all possible pairs of compound indices
+``(i, j)`` given a list of ``i`` and a list of ``j`` (the lists must have equal length).
+
+Arguments
+---------
+- `ed`:           Exact Diagonalization object.
+- `grid`:         Time grid on the imaginary time segment.
+- `c_indices`:    List of compound indices ``i``.
+- `cdag_indices`: List of compound indices ``j``.
+- `gf_filler`:    [`Algorithm selector`](@ref AbstractGFFiller) for GF computation.
 """
 function computegf(ed::EDCore,
                    grid::ImaginaryTimeGrid,
@@ -329,5 +519,5 @@ function computegf(ed::EDCore,
   @assert norb == length(cdag_indices)
   gf = ImaginaryTimeGF(grid, norb)
   _computegf!(ed, gf, c_indices, cdag_indices, grid.contour.β, gf_filler)
-  gf
+  return gf
 end
