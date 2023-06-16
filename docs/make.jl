@@ -27,5 +27,6 @@ makedocs(;
 )
 
 deploydocs(
-    repo = "github.com/krivenko/KeldyshED.jl.git"
+    repo = "github.com/krivenko/KeldyshED.jl.git",
+    versions = nothing
 )
