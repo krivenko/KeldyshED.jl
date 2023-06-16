@@ -9,7 +9,7 @@ and on the 3-branch Konstantinov-Perel' contour.
 Its main intended use is solution of auxiliary problems required by
 more advanced solvers such as the
 [Hybridization Expansion Quantum Monte Carlo](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.155107) and
-the [N-crossing approximations](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.155107).
+the [N-crossing approximations](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.82.115115).
 
 The initial public version of this package was a simplified Julia port of
 the [TRIQS/atom_diag](https://triqs.github.io/triqs/latest/documentation/manual/triqs/atom_diag/contents.html)
