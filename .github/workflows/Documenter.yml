@@ -1,9 +1,9 @@
 name: Documenter
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
     branches: [master, ci]
-    tags: [v*]
-  pull_request:
+    types: [completed]
 
 jobs:
   Documenter:
