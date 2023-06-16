@@ -219,8 +219,8 @@ G_{ij}(t_1, t_2) =
 -i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
 ```
 
-on a 3-branch Konstantinov-Perel contour for given compound indices of creation/annihilation
-operators ``i`` and ``j``.
+on a 3-branch Konstantinov-Perel' contour for given compound indices of
+creation/annihilation operators ``i`` and ``j``.
 
 Arguments
 ---------
@@ -323,8 +323,8 @@ G_{ij}(t_1, t_2) =
 -i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
 ```
 
-on a 3-branch Konstantinov-Perel contour for given compound indices of creation/annihilation
-operators ``i`` and ``j``.
+on a 3-branch Konstantinov-Perel' contour for given compound indices of
+creation/annihilation operators ``i`` and ``j``.
 
 Arguments
 ---------
@@ -427,7 +427,7 @@ G_{ij}(t_1, t_2) =
 -i \\mathrm{Tr}[\\hat\\rho \\mathbb{T}_\\mathcal{C} c_i(t_1) c^\\dagger_j(t_2)]
 ```
 
-on a 3-branch Konstantinov-Perel contour for all possible pairs of compound indices
+on a 3-branch Konstantinov-Perel' contour for all possible pairs of compound indices
 ``(i, j)`` given a list of ``i`` and a list of ``j`` (the lists must have equal length).
 
 Arguments

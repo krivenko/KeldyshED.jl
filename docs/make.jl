@@ -15,11 +15,14 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Expressions with creation/annihilation operators of fermions" => "operators.md",
-        "Hilbert spaces, states and linear operators" => "hilbert.md",
-        "Exact Diagonalization solver" => "ed_core.md",
-        "Single-particle Green's functions" => "gf.md",
-        "Density matrix and evolution operators" => "evolution.md"
+        "Public API" => [
+            "Expressions with creation/annihilation operators of fermions" => "operators.md",
+            "Hilbert spaces, states and linear operators" => "hilbert.md",
+            "Exact Diagonalization solver" => "ed_core.md",
+            "Single-particle Green's functions" => "gf.md",
+            "Density matrix and evolution operators" => "evolution.md"
+        ],
+        "Usage example" => "example.md"
     ],
 )
 
