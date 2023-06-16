@@ -19,7 +19,7 @@ makedocs(;
         "Hilbert spaces, states and linear operators" => "hilbert.md",
         "Exact Diagonalization solver" => "ed_core.md",
         "Single-particle Green's functions" => "gf.md",
-        "Evolution operators and density matrix" => "evolution.md"
+        "Density matrix and evolution operators" => "evolution.md"
     ],
 )
 
