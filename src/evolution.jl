@@ -14,7 +14,7 @@
 # details.
 #
 # You should have received a copy of the GNU General Public License along with
-# KeldyshED.jl. If not, see <http://www.gnu.org/licenses/.
+# KeldyshED.jl. If not, see <http://www.gnu.org/licenses/>.
 #
 # Authors: Hugo U.R. Strand, Igor Krivenko
 
