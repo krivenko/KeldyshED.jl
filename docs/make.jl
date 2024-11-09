@@ -25,7 +25,7 @@ makedocs(;
     modules=[
       KeldyshED,
       ],
-    authors="Igor Krivenko <igor.s.krivenko@gmail.com>",
+    authors="Igor Krivenko <iskrivenko@proton.me>",
     repo=Documenter.Remotes.GitHub("krivenko", "KeldyshED.jl"),
     sitename="KeldyshED.jl",
     format=Documenter.HTML(;
