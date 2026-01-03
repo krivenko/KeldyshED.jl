@@ -59,7 +59,7 @@ Operator{HSType, S}(op_expr::OperatorExpr{S}, soi::SetOfIndices) where {
 (*)(op::Operator, st::StateType) where {StateType <: State}
 ```
 
-## [Space autopartition algorithm] (@id autopartition)
+## Space autopartition algorithm
 
 ```@docs
 SpacePartition
