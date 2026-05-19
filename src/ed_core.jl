@@ -233,8 +233,8 @@ function EDCore(hamiltonian::OperatorExpr{S},
   cdag_matrices = [Dict{Int,Matrix{S}}() for n=1:length(soi)]
   c_matrices = [Dict{Int,Matrix{S}}() for n=1:length(soi)]
   for (indices, n) in soi
-    cdag_matrices[n] = make_c_matrix(creation_connection[n], c_dag(indices...))
-    c_matrices[n] = make_c_matrix(annihilation_connection[n], c(indices...))
+    cdag_matrices[n] = make_c_matrix(creation_connection[n], c_dag(indices...; scalar_type = S))
+    c_matrices[n] = make_c_matrix(annihilation_connection[n], c(indices...; scalar_type = S))
   end
 
   EDCore{S}(full_hs,
