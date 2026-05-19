@@ -133,8 +133,8 @@ function EDCore(hamiltonian::OperatorExpr{S},
   Cd_elements = Vector{SparseMatrixCSC{S, Int}}(undef, length(soi))
   C_elements = Vector{SparseMatrixCSC{S, Int}}(undef, length(soi))
   for (indices, n) in soi
-    op_c_dag = Operator{FullHilbertSpace, S}(c_dag(indices...), soi)
-    op_c = Operator{FullHilbertSpace, S}(c(indices...), soi)
+    op_c_dag = Operator{FullHilbertSpace, S}(c_dag(indices...; scalar_type = S), soi)
+    op_c = Operator{FullHilbertSpace, S}(c(indices...; scalar_type = S), soi)
 
     Cd_elements[n], C_elements[n] = merge_subspaces!(SP, op_c_dag, op_c, true)
   end
